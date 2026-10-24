@@ -31,4 +31,4 @@ Traced from Stedman Blower drawing 5702-PH-A-102 rev T2 at 1:50. Coordinates are
 
 ## Making changes
 
-Edit `index.html` and push to `main`. Vercel deploys automatically.
+Edit `index.html` and push to `main`. The repo is connected to the Vercel project, so every push to `main` deploys to production automatically, and other branches get preview deployments.
