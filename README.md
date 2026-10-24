@@ -12,12 +12,17 @@ Live: https://longbourne-planner.vercel.app (passcode protected)
 | `api/data.js` | `GET` returns every saved design and every custom item. |
 | `api/designs.js` | `PUT ?id=` saves a design, `DELETE ?id=` removes one. |
 | `api/catalog.js` | Same for custom item types ("My items"). |
+| `api/textures.js` | Finishes. `PUT ?id=` saves a finish (an uploaded image is stored as its own blob), `DELETE ?id=` removes it, `GET ?id=` returns the image. |
 | `api/_store.js` | Storage helpers on Vercel Blob. Keeps the last 20 versions of each design; deletes are soft. |
 | `api/app.js` | Legacy: served the page from Blob before this repo existed. Not used now that `index.html` is served directly. |
 
 ## 3D view
 
 The 3D tab builds a model from the current design: shell walls with the approved door and window openings, the hall's clipped-gable roof (eaves 2.45 m, 4.2 m across the middle, ridge 7.23 m, read off 5702-PH-A-201/202 T2), the stair void, user walls at 2.4 m, and every item at a typical height. Each item's height can be changed in the inspector, and custom items have a height field.
+
+## Finishes
+
+Twelve built-in finishes are drawn procedurally in the browser (oak, walnut, limestone flags, concrete, terrazzo, tiles, plaster, sandstone, brick, cladding, carpet). Uploaded photos are shrunk to 1024 px JPEGs in the browser before saving. A design stores its defaults in `finishes` (`floor`, `wallsIn`, `wallsOut`, `walls`); a zone can override the floor (`floor`) and a drawn wall its finish (`finish`).
 
 ## Data
 

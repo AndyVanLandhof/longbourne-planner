@@ -158,6 +158,15 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
 .loading3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
 .stage[data-view="3d"]{cursor:grab}
 .seg.views button{padding:6px 12px}
+/* finishes */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.fcard{border:1px solid var(--rule);border-radius:8px;background:var(--sheet);padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0;font-size:11.5px}
+.fcard .sw2{width:100%;aspect-ratio:1;border-radius:5px;background-size:cover;background-position:center;border:1px solid var(--rule)}
+.fcard small{font-family:var(--f-num);font-size:10px;color:var(--muted)}
+.fcard button{align-self:flex-start;font-size:11px;color:var(--dim);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+#finModal .box{width:min(760px,100%);max-height:calc(100% - 32px);overflow:auto}
+.finsel{display:flex;align-items:center;gap:6px}
+.finsel i{width:18px;height:18px;border-radius:4px;border:1px solid var(--rule);background-size:cover;flex:none}
 /* modal */
 .modal{position:fixed;inset:0;background:rgba(10,15,20,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .modal .box{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:16px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px}
@@ -318,6 +327,24 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
   </form>
 </div>
 
+<div class="modal" id="finModal" hidden>
+<div class="box">
+<div class="row" style="align-items:center"><h2>Finishes</h2><div class="grow"></div><button class="ib" id="finClose">Close</button></div>
+<p class="note">Finishes skin the floors and walls in the 3D view. Pick them for the whole design under This design, for a zone's floor, or for a wall you've drawn.</p>
+<h3 class="note" style="font-weight:600;color:var(--ink)">Your finishes</h3>
+<div class="fgrid" id="finMine"></div>
+<form id="finForm" class="fields" style="border-top:1px solid var(--rule);padding-top:10px">
+<label class="full">Name<input type="text" id="fn-name" maxlength="50" required placeholder="e.g. Reclaimed oak, Spa tile, Farrow & Ball Skimming Stone"></label>
+<label>Type<select id="fn-type"><option value="image">Photo or image</option><option value="color">Paint colour</option></select></label>
+<label id="fn-colw" hidden>Colour<input type="color" id="fn-color" value="#d9d4c7" style="height:34px;padding:2px"></label>
+<label id="fn-filew" class="full">Image (JPG or PNG; a straight-on photo of a sample works well)<input type="file" id="fn-file" accept="image/*"></label>
+<label id="fn-tilew">Real width the image covers (m)<input type="number" id="fn-tile" min="0.05" max="10" step="0.05" value="1"></label>
+<div class="row full" style="grid-column:1/-1"><button class="ib" type="submit" id="fn-save">Add finish</button><span class="note" id="fn-msg"></span></div>
+</form>
+<h3 class="note" style="font-weight:600;color:var(--ink)">Built in</h3>
+<div class="fgrid" id="finBuilt"></div>
+</div>
+</div>
 <div class="login" id="login" hidden>
   <form id="loginForm">
     <h1>Pool House Planner</h1>
@@ -639,6 +666,7 @@ function renderInspector(){let h='';
       <div class="big">${isZ?fmtA(it.w*it.d):fmtWD(it.w,it.d)}${isZ?`<small>${fmtWD(it.w,it.d)}</small>`:''}</div>
       <div class="fields">
         <label class="full">Name<input type="text" id="f-label" data-f="label" value="${esc(it.label||c.n)}"></label>
+        ${isZ?`<label class="full">Floor finish (3D)<select id="f-zfloor" data-f="zfloor">${finOptions(it.floor||'',true,'Same as main floor')}</select></label>`:''}
         ${isZ?`<label class="full">Use<select id="f-zt" data-f="zt">${Object.entries(ZT).map(([k,v])=>`<option value="${k}"${k===(it.zt||'other')?' selected':''}>${v[0]}</option>`).join('')}</select></label>`:''}
         <label>Width (mm)<input type="number" id="f-w" data-f="w" step="10" min="50" value="${Math.round(it.w)}"></label>
         <label>Depth (mm)<input type="number" id="f-d" data-f="d" step="10" min="50" value="${Math.round(it.d)}"></label>
@@ -653,6 +681,7 @@ ${canSink(it)?`<label class="full" style="flex-direction:row;align-items:center;
     if(!isFlat(it)){const cl=clearances(it);h+=`<section><h2>Space around it</h2><table class="kv">${cl.map(c=>`<tr><td>${c.dir}</td><td>${c.d>20000?'open':fmt(Math.max(0,c.d))}</td></tr>`).join('')}</table><p class="note">Distance from each side to the nearest wall or item. Shown as dashed lines on the plan.</p></section>`}
   } else if(w){const L=Math.hypot(w.x2-w.x1,w.y2-w.y1);h+=`<section><h2>Wall</h2><div class="big">${fmt(L)}</div><div class="fields">
       <label>Length (mm)<input type="number" id="f-wl" data-f="wl" step="10" value="${Math.round(L)}"></label>
+      <label class="full">Finish (3D)<select id="f-wfin" data-f="wfin">${finOptions(w.finish||'',true,'Same as drawn walls')}</select></label>
       <label>Thickness<select id="f-wt" data-f="wt">${[[75,'75 glass/stud'],[100,'100 stud'],[150,'150 stud'],[215,'215 block'],[300,'300 masonry']].map(([v,t])=>`<option value="${v}"${v==w.t?' selected':''}>${t}</option>`).join('')}</select></label></div>
       <p class="note">Length is measured along the centre line. Drag the round ends to adjust.</p>
       <div class="row"><button class="ib danger" data-act="del">Delete wall</button></div></section>`}
@@ -676,6 +705,11 @@ ${canSink(it)?`<label class="full" style="flex-direction:row;align-items:center;
     <label><input type="checkbox" id="o-openings" data-o="openings"${opt.openings?' checked':''}> Approved doors and windows</label></div></section>
   ${curDoc()?`<section><h2>This design</h2><div class="fields"><label class="full">Name<input type="text" id="f-dname" data-dn="name" maxlength="80" value="${esc(curDoc().name)}"></label>
     <label class="full">Notes<textarea id="f-dnotes" data-dn="notes" placeholder="What's the idea behind this option?">${esc(curDoc().notes||'')}</textarea></label></div>
+    <div class="fields"><label class="full">Main floor<select data-fin="floor" id="d-fin-floor">${finOptions(dFin('floor'),false)}</select></label>
+    <label class="full">Shell walls, inside<select data-fin="wallsIn" id="d-fin-in">${finOptions(dFin('wallsIn'),false)}</select></label>
+    <label class="full">Shell walls, outside<select data-fin="wallsOut" id="d-fin-out">${finOptions(dFin('wallsOut'),false)}</select></label>
+    <label class="full">Walls you draw<select data-fin="walls" id="d-fin-walls">${finOptions(dFin('walls'),false)}</select></label></div>
+    <div class="row"><button class="ib" data-act="finishes">Manage finishes…</button></div>
     <div class="row"><button class="ib" data-act="designs">All designs</button><button class="ib" data-act="copydesign">Save a copy as new option</button></div>
     <div class="row"><button class="ib" data-act="sample">Load sample into this design</button><button class="ib danger" data-act="clearall">Clear this design</button></div>
     <p class="note">${esc(stampText(curDoc()))}</p></section>`:''}
@@ -753,7 +787,7 @@ svg.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e
 const endPt=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null};svg.addEventListener('pointerup',endPt,true);svg.addEventListener('pointercancel',endPt,true);
 
 /* ---------- Keyboard ---------- */
-document.addEventListener('keydown',e=>{altDown=e.altKey;shiftDown=e.shiftKey;const tg=e.target;if(tg.matches&&tg.matches('input,textarea,select'))return;if(!$('#login').hidden||!$('#citem').hidden||!$('#modal').hidden)return;
+document.addEventListener('keydown',e=>{altDown=e.altKey;shiftDown=e.shiftKey;const tg=e.target;if(tg.matches&&tg.matches('input,textarea,select'))return;if(!$('#login').hidden||!$('#citem').hidden||!$('#modal').hidden||!$('#finModal').hidden)return;
 if(V3.on){if(key3D(e,true))e.preventDefault();return}const k=e.key,mod=e.metaKey||e.ctrlKey;
   if(k===' '){spaceDown=true;e.preventDefault();return}
   if(mod&&k.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
@@ -775,18 +809,21 @@ document.addEventListener('keyup',e=>{altDown=e.altKey;shiftDown=e.shiftKey;if(V
 
 /* ---------- Inspector events ---------- */
 insp.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.fin){const d=curDoc();if(!d)return;d.finishes={...(d.finishes||{}),[t.dataset.fin]:t.value};scheduleSave();V3.dirty=true;return}
   if(t.dataset.dn){const d=curDoc();if(!d)return;const v=t.value.trim();if(t.dataset.dn==='name'&&!v){t.value=d.name;return}d[t.dataset.dn]=v;scheduleSave();renderDesignBar();return}
   if(t.dataset.o){opt[t.dataset.o]=t.checked;save();render();return}
   const f=t.dataset.f;if(!f||!sel)return;const o=find(sel.id);if(!o)return;
   mutate(()=>{if(sel.type==='item'){
       if(f==='sunk'){o.sunk=t.checked}
+else if(f==='zfloor'){if(t.value)o.floor=t.value;else delete o.floor}
+else if(f==='wfin'){if(t.value)o.finish=t.value;else delete o.finish}
 else if(f==='label')o.label=t.value.trim();else if(f==='zt'){o.zt=t.value}
       else if(f==='w'||f==='d'){const v=Math.max(50,+t.value||0);const sw=((o.rot||0)%180)!==0;const L=o.x-(sw?o.d:o.w)/2,T=o.y-(sw?o.w:o.d)/2;o[f]=v;if(CATMAP[o.k]?.sq){o.w=o.d=v}o.x=L+(sw?o.d:o.w)/2;o.y=T+(sw?o.w:o.d)/2}
       else if(f==='rot'){o.rot=(((+t.value||0)%360)+360)%360}
 else if(f==='h'){o.h=Math.max(10,+t.value||0)}
       else if(f==='x'){const sw=((o.rot||0)%180)!==0;o.x=(+t.value||0)+(sw?o.d:o.w)/2}
       else if(f==='y'){const sw=((o.rot||0)%180)!==0;o.y=(+t.value||0)+(sw?o.w:o.d)/2}}
-    else if(sel.type==='wall'){if(f==='wl'){const L=Math.hypot(o.x2-o.x1,o.y2-o.y1)||1,v=Math.max(50,+t.value||0);o.x2=o.x1+(o.x2-o.x1)/L*v;o.y2=o.y1+(o.y2-o.y1)/L*v}if(f==='wt'){o.t=+t.value;wallT=o.t}}})});
+    else if(sel.type==='wall'){if(f==='wfin'){if(t.value)o.finish=t.value;else delete o.finish}if(f==='wl'){const L=Math.hypot(o.x2-o.x1,o.y2-o.y1)||1,v=Math.max(50,+t.value||0);o.x2=o.x1+(o.x2-o.x1)/L*v;o.y2=o.y1+(o.y2-o.y1)/L*v}if(f==='wt'){o.t=+t.value;wallT=o.t}}})});
 insp.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='del')delSel();else if(a==='dup')dupSel();else if(a==='rotl')rotSel(-90);else if(a==='rotr')rotSel(90);
   else if(a==='keepspan'&&span){const s=span;mutate(()=>{if(isFinite(s.l+s.r))S.dims.push({id:nid(),x1:s.x-s.l,y1:s.y,x2:s.x+s.r,y2:s.y});if(isFinite(s.u+s.d))S.dims.push({id:nid(),x1:s.x,y1:s.y-s.u,x2:s.x,y2:s.y+s.d})});span=null;render();renderInspector()}
@@ -794,6 +831,7 @@ insp.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)r
   else if(a==='sample'){const b4=snapshot();S=sample();sel=null;commit(b4);render();renderInspector();toast('Sample layout loaded.',true)}
   else if(a==='clearall'){const b4=snapshot();S={items:[],walls:[],dims:[]};sel=null;commit(b4);render();renderInspector();toast('Plan cleared.',true)}
   else if(a==='designs'){openDesigns()}
+  else if(a==='finishes'){openFinishes()}
   else if(a==='copydesign'){newDesign('copy')}
   else if(a==='editc'){openCustom(b.dataset.cid)}
   else if(a==='code'){$('#code').value=JSON.stringify({v:1,...S});$('#codeMsg').textContent='';$('#modal').hidden=false}});
@@ -828,6 +866,62 @@ function sample(){const I=(k,x,y,o={})=>{const c=CATMAP[k];return {id:nid(),k,x,
    I('zone-office',23048,11275,{w:4500,d:4450}),I('desk',23600,9850),I('dchair',23600,10600,{rot:180}),I('books',25123,11800,{rot:90}),I('armchair',21600,12300),
    I('zone-bar',23048,15680,{w:4500,d:4360}),I('kitchen',23600,17560),I('island',23600,15500),I('stool',22700,14700),I('stool',23600,14700),I('stool',24500,14700),
    I('zone-spa',10210,16038,{w:4840,d:3644}),I('sauna4',8900,15300),I('plunge',11500,14850),I('shower',11950,17360),I('wc',8200,17480),I('basin',9000,17600)]}}
+
+/* ---------- Finishes (textures) ---------- */
+const FIN_DEFAULT={floor:'',wallsIn:'',wallsOut:'',walls:''};
+let textures=[];const texCache={},texImg={};
+function rnd(seed){let x=seed>>>0||1;return()=>((x=(x*1664525+1013904223)>>>0)/4294967296)}
+function cv(n=512){const c=document.createElement('canvas');c.width=c.height=n;return [c,c.getContext('2d')]}
+function shade(hex,amt){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const f=v=>Math.max(0,Math.min(255,Math.round(v+amt)));return `rgb(${f(r)},${f(g)},${f(b)})`}
+function noise(x,c,amt,seed,count=9000){const r=rnd(seed);for(let i=0;i<count;i++){x.fillStyle=`rgba(${c},${r()*amt})`;x.fillRect(r()*512,r()*512,1+r()*2,1+r()*2)}}
+const BUILTIN=[
+ {id:'b:oak',name:'Oak boards',tile:1.2,draw:(x)=>{const r=rnd(7);const pw=512/8;for(let i=0;i<8;i++){let y=-r()*400;while(y<512){const L=180+r()*260;x.fillStyle=shade('#b88b58',(r()-.5)*36);x.fillRect(i*pw,y,pw,L);x.strokeStyle='rgba(60,35,15,.35)';x.lineWidth=1.2;x.strokeRect(i*pw+.5,y+.5,pw-1,L-1);
+   for(let k=0;k<7;k++){x.strokeStyle=`rgba(90,55,25,${.08+r()*.12})`;x.beginPath();const gx=i*pw+4+r()*(pw-8);x.moveTo(gx,y);x.bezierCurveTo(gx+(r()-.5)*10,y+L*.3,gx+(r()-.5)*10,y+L*.7,gx+(r()-.5)*6,y+L);x.stroke()}y+=L}}}},
+ {id:'b:walnut',name:'Walnut boards',tile:1.2,draw:(x)=>{const r=rnd(11);const pw=512/8;for(let i=0;i<8;i++){let y=-r()*400;while(y<512){const L=200+r()*240;x.fillStyle=shade('#6b4a33',(r()-.5)*24);x.fillRect(i*pw,y,pw,L);x.strokeStyle='rgba(20,10,5,.45)';x.strokeRect(i*pw+.5,y+.5,pw-1,L-1);for(let k=0;k<6;k++){x.strokeStyle=`rgba(30,15,8,${.1+r()*.15})`;x.beginPath();const gx=i*pw+4+r()*(pw-8);x.moveTo(gx,y);x.lineTo(gx+(r()-.5)*8,y+L);x.stroke()}y+=L}}}},
+ {id:'b:flags',name:'Limestone flags',tile:1.8,draw:(x)=>{const r=rnd(3);x.fillStyle='#bdb4a3';x.fillRect(0,0,512,512);const rows=[[0,171],[171,171],[342,170]];rows.forEach(([y,h],ri)=>{let xx=-(ri*57);while(xx<512){const w=[256,171,228][Math.floor(r()*3)];x.fillStyle=shade('#d8ceba',(r()-.5)*26);x.fillRect(xx+2,y+2,w-4,h-4);noise(x,'110,100,85',.12,ri*100+xx,300);xx+=w}});}},
+ {id:'b:concrete',name:'Polished concrete',tile:2,draw:(x)=>{x.fillStyle='#a9aaa6';x.fillRect(0,0,512,512);noise(x,'70,72,70',.18,5,14000);noise(x,'230,230,226',.2,6,9000)}},
+ {id:'b:terrazzo',name:'Terrazzo',tile:1,draw:(x)=>{x.fillStyle='#ebe7df';x.fillRect(0,0,512,512);const r=rnd(9);const cs=['#9a8f80','#c8b9a3','#6e6a65','#d9c7b0','#b6a28c'];for(let i=0;i<900;i++){x.fillStyle=cs[Math.floor(r()*cs.length)];x.beginPath();x.ellipse(r()*512,r()*512,1.5+r()*5,1+r()*4,r()*3,0,6.3);x.fill()}}},
+ {id:'b:greytile',name:'Grey tile 600',tile:1.2,draw:(x)=>{x.fillStyle='#7b7f80';x.fillRect(0,0,512,512);const r=rnd(4);for(let i=0;i<2;i++)for(let j=0;j<2;j++){x.fillStyle=shade('#9b9fa0',(r()-.5)*14);x.fillRect(i*256+2,j*256+2,252,252)}noise(x,'60,60,60',.08,8,4000)}},
+ {id:'b:metro',name:'White metro tile',tile:.6,draw:(x)=>{x.fillStyle='#cfd2d2';x.fillRect(0,0,512,512);const th=512/6,tw=512/3;for(let j=0;j<6;j++)for(let i=-1;i<4;i++){const ox=(j%2)*tw/2;x.fillStyle='#f5f6f4';x.fillRect(i*tw+ox+2,j*th+2,tw-4,th-4)}}},
+ {id:'b:plaster',name:'Lime plaster',tile:2,draw:(x)=>{x.fillStyle='#ece6da';x.fillRect(0,0,512,512);noise(x,'180,170,150',.08,12,12000);noise(x,'255,255,250',.12,13,8000)}},
+ {id:'b:sandstone',name:'Sandstone rubble',tile:2,draw:(x)=>{x.fillStyle='#b8a47e';x.fillRect(0,0,512,512);const r=rnd(21);let y=0;while(y<512){const h=34+r()*36;let xx=-r()*60;while(xx<512){const w=50+r()*90;x.fillStyle=shade('#d6c08c',(r()-.5)*40);x.beginPath();x.roundRect?x.roundRect(xx+3,y+3,w-6,h-6,8):x.rect(xx+3,y+3,w-6,h-6);x.fill();xx+=w}y+=h}noise(x,'90,70,40',.12,22,6000)}},
+ {id:'b:brick',name:'Red brick',tile:1,draw:(x)=>{x.fillStyle='#c9c1b4';x.fillRect(0,0,512,512);const r=rnd(17);const bh=512/13.33,bw=512/4.4;for(let j=0;j<14;j++)for(let i=-1;i<6;i++){const ox=(j%2)*bw/2;x.fillStyle=shade('#a5503a',(r()-.5)*40);x.fillRect(i*bw+ox+3,j*bh+3,bw-6,bh-6)}}},
+ {id:'b:cladding',name:'Oak cladding',tile:1.2,draw:(x)=>{const r=rnd(31);const pw=512/9;for(let i=0;i<9;i++){x.fillStyle=shade('#a98559',(r()-.5)*30);x.fillRect(i*pw,0,pw,512);x.fillStyle='rgba(40,25,10,.5)';x.fillRect(i*pw,0,2,512);for(let k=0;k<6;k++){x.strokeStyle=`rgba(80,50,20,${.08+r()*.12})`;x.beginPath();const gx=i*pw+4+r()*(pw-8);x.moveTo(gx,0);x.lineTo(gx+(r()-.5)*8,512);x.stroke()}}}},
+ {id:'b:carpet',name:'Wool carpet',tile:1,draw:(x)=>{x.fillStyle='#8d877c';x.fillRect(0,0,512,512);noise(x,'60,55,48',.25,41,22000);noise(x,'200,195,185',.2,42,16000)}},
+];
+const BMAP=Object.fromEntries(BUILTIN.map(b=>[b.id,b]));
+function finById(id){if(!id)return null;if(BMAP[id])return {id,name:BMAP[id].name,tile:BMAP[id].tile,builtin:1};const t=textures.find(x=>'t:'+x.id===id);return t?{id,name:t.name,tile:+t.tile||1,type:t.type,color:t.color,data:t.data}:null}
+function finThumb(id){const f=finById(id);if(!f)return '';if(f.builtin){if(!texCache['thumb:'+id]){const [c,x]=cv();BMAP[id].draw(x);const [c2,x2]=cv(96);x2.drawImage(c,0,0,96,96);texCache['thumb:'+id]=c2.toDataURL('image/jpeg',.8);texCache['canvas:'+id]=c}return texCache['thumb:'+id]}return f.type==='color'?'':f.data}
+function finOptions(sel,withDefault,defLabel){const opts=[withDefault?`<option value="">${esc(defLabel||'Default')}</option>`:`<option value="">Plain</option>`];
+  if(textures.length)opts.push(`<optgroup label="Your finishes">`+textures.map(t=>`<option value="t:${t.id}"${sel==='t:'+t.id?' selected':''}>${esc(t.name)}</option>`).join('')+`</optgroup>`);
+  opts.push(`<optgroup label="Built in">`+BUILTIN.map(b=>`<option value="${b.id}"${sel===b.id?' selected':''}>${esc(b.name)}</option>`).join('')+`</optgroup>`);return opts.join('')}
+function dFin(k){const d=curDoc();return (d&&d.finishes&&d.finishes[k])||''}
+// 3D material for a finish id (null = use the default material)
+function finMat(id){const f=finById(id);if(!f||!window.THREE)return null;const key='fin:'+id+':'+(f.tile||1);if(mats[key])return mats[key];
+  if(f.type==='color'){mats[key]=std(f.color||'#cccccc');return mats[key]}
+  let tex;if(f.builtin){finThumb(id);tex=new THREE.CanvasTexture(texCache['canvas:'+id])}
+  else{tex=new THREE.Texture();const im=new Image();im.onload=()=>{tex.image=im;tex.needsUpdate=true;V3.dirty=true};im.src=f.data}
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;tex.repeat.set(1/(f.tile||1),1/(f.tile||1));
+  mats[key]=new THREE.MeshStandardMaterial({map:tex,roughness:.85,metalness:0});return mats[key]}
+// Give a box real-world UVs (metres), so textures keep their scale and line up between pieces
+function worldUV(mesh){const g=mesh.geometry,p=g.attributes.position,nrm=g.attributes.normal,uv=g.attributes.uv,o=mesh.position;
+  for(let i=0;i<p.count;i++){const x=p.getX(i)+o.x,y=p.getY(i)+o.y,z=p.getZ(i)+o.z,ax=Math.abs(nrm.getX(i)),ay=Math.abs(nrm.getY(i)),az=Math.abs(nrm.getZ(i));
+    if(ay>=ax&&ay>=az)uv.setXY(i,x,-z);else if(ax>=az)uv.setXY(i,z,y);else uv.setXY(i,x,y)}uv.needsUpdate=true}
+function openFinishes(){renderFinishes();$('#finModal').hidden=false;closeSheets()}
+function renderFinishes(){$('#finMine').innerHTML=textures.length?textures.map(t=>`<div class="fcard"><div class="sw2" style="${t.type==='color'?'background:'+esc(t.color):'background-image:url('+t.data+')'}"></div><b>${esc(t.name)}</b><small>${t.type==='color'?esc(t.color):'covers '+(+t.tile||1)+' m'}</small><button type="button" data-tdel="${t.id}">Delete</button></div>`).join(''):'<p class="note">None yet. Add a photo or a paint colour below.</p>';
+  $('#finBuilt').innerHTML=BUILTIN.map(b=>`<div class="fcard"><div class="sw2" style="background-image:url(${finThumb(b.id)})"></div><b>${esc(b.name)}</b><small>covers ${b.tile} m</small></div>`).join('')}
+$('#finClose').onclick=()=>$('#finModal').hidden=true;
+$('#fn-type').onchange=e=>{const img=e.target.value==='image';$('#fn-filew').hidden=!img;$('#fn-tilew').hidden=!img;$('#fn-colw').hidden=img};
+async function shrinkImage(file){const url=URL.createObjectURL(file);try{const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('That file could not be read as an image.'));i.src=url});
+  const m=1024,s=Math.min(1,m/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}finally{URL.revokeObjectURL(url)}}
+$('#finForm').addEventListener('submit',async e=>{e.preventDefault();const type=$('#fn-type').value,name=$('#fn-name').value.trim();if(!name)return;const msg=$('#fn-msg');
+  const t={id:uid(),name,type,tile:Math.max(.05,+$('#fn-tile').value||1),updatedAt:Date.now(),updatedBy:ls.get('lbph-who')};
+  try{$('#fn-save').disabled=true;if(type==='image'){const f=$('#fn-file').files[0];if(!f){msg.textContent='Choose an image first.';return}msg.textContent='Preparing image…';t.data=await shrinkImage(f)}else t.color=$('#fn-color').value;
+    msg.textContent='Saving…';await api('/api/textures?id='+encodeURIComponent(t.id),{method:'PUT',body:JSON.stringify(t)});textures.push(t);textures.sort((a,b)=>a.name.localeCompare(b.name));
+    msg.textContent=`Added “${name}”. Pick it under This design, a zone or a wall.`;$('#finForm').reset();$('#fn-type').dispatchEvent(new Event('change'));renderFinishes();renderInspector();V3.dirty=true}
+  catch(err){if(!err.auth)msg.textContent='Could not add it: '+err.message}finally{$('#fn-save').disabled=false}});
+$('#finMine').addEventListener('click',async e=>{const b=e.target.closest('[data-tdel]');if(!b)return;if(b.textContent!=='Confirm delete'){b.textContent='Confirm delete';return}
+  try{await api('/api/textures?id='+encodeURIComponent(b.dataset.tdel),{method:'DELETE'});textures=textures.filter(x=>x.id!==b.dataset.tdel);Object.keys(mats).filter(k=>k.startsWith('fin:t:'+b.dataset.tdel)).forEach(k=>delete mats[k]);renderFinishes();renderInspector();V3.dirty=true}catch(err){if(!err.auth)toast('Could not delete: '+err.message)}});
 
 /* ---------- 3D view ---------- */
 const H3={sofa:800,arm:800,lsofa:800,chair:900,stool:750,table:750,desk:750,lounger:450,daybed:450,tv:1900,rug:10,shelf:2100,rack:1000,cupboard:2200,counter:900,island:900,fridge:1800,wc:780,basin:850,vanity2:850,bath:550,shower:2000,sauna:2100,steam:2200,plunge:1000,tub:900,bed:750,golf:3100,golfopen:3100,putt:20,mat:20,door:2100,door2:2100,slide:2100,column:2450,stair:60,tread:1400,yoga:10,'c-rect':900,'c-round':900,'c-circle':900,'c-flat':10,zone:5};
@@ -877,7 +971,7 @@ function key3D(e,down){const k=e.key.length===1?e.key.toLowerCase():e.key;if(['w
 // world helpers: plan mm -> metres; plan y -> world z
 const mm=v=>v/1000;
 function edges(mesh){const l=new T3.LineSegments(new T3.EdgesGeometry(mesh.geometry,25),mats.edge);mesh.add(l);return mesh}
-function boxA(x0,z0,x1,z1,y0,y1,mat,parent,noEdge){const w=Math.abs(x1-x0),d=Math.abs(z1-z0),h=y1-y0;if(w<1e-4||d<1e-4||h<1e-4)return null;const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),mat);m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);m.castShadow=m.receiveShadow=mat.opacity>=1;if(!noEdge&&mat.opacity>=1)edges(m);(parent||root3).add(m);return m}
+function boxA(x0,z0,x1,z1,y0,y1,mat,parent,noEdge){const w=Math.abs(x1-x0),d=Math.abs(z1-z0),h=y1-y0;if(w<1e-4||d<1e-4||h<1e-4)return null;const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),mat);m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);const op=Array.isArray(mat)?1:mat.opacity;m.castShadow=m.receiveShadow=op>=1;if(Array.isArray(mat)||mat.map)worldUV(m);if(!noEdge&&op>=1&&!(Array.isArray(mat)||mat.map))edges(m);(parent||root3).add(m);return m}
 function clear3D(){root3.traverse(o=>{if(o.geometry)o.geometry.dispose()});root3.clear()}
 function build3D(){clear3D();pick=[];
   // ground
@@ -886,7 +980,7 @@ function build3D(){clear3D();pick=[];
   const g=new T3.Mesh(new T3.ShapeGeometry(gs),mats.ground);g.rotation.x=-Math.PI/2;g.position.y=-.02;g.receiveShadow=true;root3.add(g);
   // floor with stair void
   const sh=new T3.Shape(POLY.map(([x,y])=>new T3.Vector2(mm(x),-mm(y))));holes3.forEach(h=>sh.holes.push(h));
-  const fl=new T3.Mesh(new T3.ShapeGeometry(sh),mats.floor);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;root3.add(fl);
+  const fl=new T3.Mesh(new T3.ShapeGeometry(sh),finMat(dFin('floor'))||mats.floor);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;root3.add(fl);
   boxA(mm(LOGGIA.x),mm(LOGGIA.y),mm(LOGGIA.x+LOGGIA.w),mm(LOGGIA.y+LOGGIA.h),-.05,0,mats.loggia,null,true).receiveShadow=true;
   // shell walls
   const out=offsetPoly(POLY,WT);
@@ -897,21 +991,26 @@ function build3D(){clear3D();pick=[];
     if(horiz&&a[1]===9397&&Math.max(a[0],b[0])===12630){glazedScreen();continue}       // link to loggia: glazed screen
     const isHouse=!horiz&&a[0]===0;const hallSide=!horiz&&(a[0]===12630||a[0]===20798)&&Math.max(a[1],b[1])<=9397;
     const wingOuter=(!horiz&&a[0]===25298)||(horiz&&a[1]===9050&&Math.min(a[0],b[0])>=20798);
-    const H=hallSide?ROOF.eave:wingOuter?3075:3000;wallRun(x0,y0,x1,y1,horiz,H,isHouse?mats.house:mats.wall)}
-  PIERS.forEach(p=>boxA(mm(p.x),mm(p.y),mm(p.x+p.w),mm(p.y+p.h),0,3.285,mats.wall));
+    const H=hallSide?ROOF.eave:wingOuter?3075:3000;wallRun(x0,y0,x1,y1,horiz,H,isHouse?mats.house:wallMats(norm(a,b)))}
+  PIERS.forEach(p=>boxA(mm(p.x),mm(p.y),mm(p.x+p.w),mm(p.y+p.h),0,3.285,finMat(dFin('wallsOut'))||mats.wall));
   // structural strip and stair down to the basement
   boxA(mm(STRUCT.x),mm(STRUCT.y),mm(STRUCT.x+STRUCT.w),mm(STRUCT.y+STRUCT.h),0,3,mats.struct);
   const n=18,tw=STAIR.w/n,rise=3.06/n;for(let i=0;i<n;i++){const xa=mm(STAIR.x+STAIR.w-(i+1)*tw),xb=mm(STAIR.x+STAIR.w-i*tw);boxA(xa,mm(STAIR.y),xb,mm(STAIR.y+STAIR.h),-3.1,-(i+1)*rise,mats.stair)}
   boxA(mm(STAIR.x)-.2,mm(STAIR.y+STAIR.h),mm(STAIR.x+STAIR.w),mm(STAIR.y+STAIR.h)+.2,-3.1,0,mats.void,null,true);boxA(mm(STAIR.x)-.2,mm(STAIR.y),mm(STAIR.x),mm(STAIR.y+STAIR.h),-3.1,0,mats.void,null,true);
   roofs();
   // zones
-  S.items.filter(i=>CATMAP[i.k]?.s==='zone').forEach(z=>{const c=new T3.Color(cssv(ZT[z.zt||'other'][1]));const m=new T3.Mesh(new T3.PlaneGeometry(mm(z.w),mm(z.d)),new T3.MeshBasicMaterial({color:c,transparent:true,opacity:.22,depthWrite:false}));m.rotation.x=-Math.PI/2;m.rotation.z=-(z.rot||0)*Math.PI/180;m.position.set(mm(z.x),.006,mm(z.y));root3.add(m);
+  S.items.filter(i=>CATMAP[i.k]?.s==='zone').forEach(z=>{const c=new T3.Color(cssv(ZT[z.zt||'other'][1]));const zf=finMat(z.floor);
+    if(zf){const pg=new T3.PlaneGeometry(mm(z.w),mm(z.d));const uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*mm(z.w),uv.getY(i)*mm(z.d));const fm=new T3.Mesh(pg,zf);fm.rotation.x=-Math.PI/2;fm.rotation.z=-(z.rot||0)*Math.PI/180;fm.position.set(mm(z.x),.004,mm(z.y));fm.receiveShadow=true;root3.add(fm);
+      root3.add(new T3.LineLoop(new T3.BufferGeometry().setFromPoints(corners(z).map(([x,y])=>new T3.Vector3(mm(x),.01,mm(y)))),new T3.LineBasicMaterial({color:c})));return}const m=new T3.Mesh(new T3.PlaneGeometry(mm(z.w),mm(z.d)),new T3.MeshBasicMaterial({color:c,transparent:true,opacity:.22,depthWrite:false}));m.rotation.x=-Math.PI/2;m.rotation.z=-(z.rot||0)*Math.PI/180;m.position.set(mm(z.x),.006,mm(z.y));root3.add(m);
     const ln=new T3.LineLoop(new T3.BufferGeometry().setFromPoints(corners(z).map(([x,y])=>new T3.Vector3(mm(x),.01,mm(y)))),new T3.LineBasicMaterial({color:c}));root3.add(ln)});
   // user walls
-  S.walls.forEach(w=>{const L=Math.hypot(w.x2-w.x1,w.y2-w.y1);if(L<1)return;const m=new T3.Mesh(new T3.BoxGeometry(mm(L),2.4,mm(w.t)),mats.wallIn);m.position.set(mm((w.x1+w.x2)/2),1.2,mm((w.y1+w.y2)/2));m.rotation.y=-Math.atan2(w.y2-w.y1,w.x2-w.x1);m.castShadow=m.receiveShadow=true;edges(m);m.userData={id:w.id,type:'wall'};root3.add(m);pick.push(m);if(sel&&sel.id===w.id)selBox(m)});
+  S.walls.forEach(w=>{const L=Math.hypot(w.x2-w.x1,w.y2-w.y1);if(L<1)return;const wf=finMat(w.finish||dFin('walls'));const m=new T3.Mesh(new T3.BoxGeometry(mm(L),2.4,mm(w.t)),wf||mats.wallIn);if(wf){const p=m.position;worldUV(m)}m.position.set(mm((w.x1+w.x2)/2),1.2,mm((w.y1+w.y2)/2));m.rotation.y=-Math.atan2(w.y2-w.y1,w.x2-w.x1);m.castShadow=m.receiveShadow=true;if(!wf)edges(m);m.userData={id:w.id,type:'wall'};root3.add(m);pick.push(m);if(sel&&sel.id===w.id)selBox(m)});
   // items
   S.items.filter(i=>CATMAP[i.k]?.s!=='zone').forEach(it=>{const grp=item3D(it);grp.position.set(mm(it.x),0,mm(it.y));grp.rotation.y=-(it.rot||0)*Math.PI/180;grp.traverse(o=>{if(o.isMesh){o.userData={id:it.id,type:'item'};pick.push(o)}});root3.add(grp);if(sel&&sel.id===it.id)selBox(grp)})}
 function selBox(o){const b=new T3.BoxHelper(o,new T3.Color(cssv('--sel')));root3.add(b)}
+// box faces: +X,-X,+Y,-Y,+Z,-Z. The face pointing into the building gets the inside finish.
+function wallMats(n){const out=finMat(dFin('wallsOut'))||mats.wall,inn=finMat(dFin('wallsIn'))||mats.wall;if(out===mats.wall&&inn===mats.wall)return mats.wall;const arr=[out,out,out,out,out,out];
+  const ix=-n[0],iz=-n[1];if(Math.abs(ix)>Math.abs(iz))arr[ix>0?0:1]=inn;else arr[iz>0?4:5]=inn;return arr}
 function wallRun(x0,y0,x1,y1,horiz,H,mat){const ops=OPEN3.filter(o=>o.x<x1-1&&o.x+o.w>x0+1&&o.y<y1-1&&o.y+o.h>y0+1).map(o=>horiz?[Math.max(o.x,x0),Math.min(o.x+o.w,x1),o]:[Math.max(o.y,y0),Math.min(o.y+o.h,y1),o]).sort((p,q)=>p[0]-q[0]);
   let u=horiz?x0:y0;const end=horiz?x1:y1;const seg=(u0,u1,ya,yb,m,ne)=>horiz?boxA(mm(u0),mm(y0),mm(u1),mm(y1),ya,yb,m,null,ne):boxA(mm(x0),mm(u0),mm(x1),mm(u1),ya,yb,m,null,ne);
   for(const [a,b,o] of ops){seg(u,a,0,mm(H),mat);if(o.sill>0)seg(a,b,0,mm(o.sill),mat);seg(a,b,mm(o.top),mm(H),mat);if(!o.door){const c=(horiz?(y0+y1)/2:(x0+x1)/2);horiz?boxA(mm(a),mm(c-25),mm(b),mm(c+25),mm(o.sill),mm(o.top),mats.glass):boxA(mm(c-25),mm(a),mm(c+25),mm(b),mm(o.sill),mm(o.top),mats.glass)}u=b}
@@ -920,7 +1019,8 @@ function gable(){// north end wall of the hall: stone to 2.45 m at the corners, 
   const x0=12054,x1=21374,L=mm(x1-x0),s=mm(ROOF.shoulder),e=mm(ROOF.eave),h=mm(ROOF.mid);const sh=new T3.Shape([new T3.Vector2(0,0),new T3.Vector2(L,0),new T3.Vector2(L,e),new T3.Vector2(L-s,h),new T3.Vector2(s,h),new T3.Vector2(0,e)]);
   const holes=[[15810,17483,0,2700,1],[13627,14428,160,2080],[18939,19740,160,2080]];
   holes.forEach(([a,b,y0,y1])=>sh.holes.push(new T3.Path([new T3.Vector2(mm(a-x0),mm(y0)+.001),new T3.Vector2(mm(b-x0),mm(y0)+.001),new T3.Vector2(mm(b-x0),mm(y1)),new T3.Vector2(mm(a-x0),mm(y1))])));
-  const m=new T3.Mesh(new T3.ExtrudeGeometry(sh,{depth:mm(WT),bevelEnabled:false}),mats.wall);m.position.set(mm(x0),0,-mm(WT));m.castShadow=m.receiveShadow=true;edges(m);root3.add(m);
+  const gOut=finMat(dFin('wallsOut')),gIn=finMat(dFin('wallsIn'));const m=new T3.Mesh(new T3.ExtrudeGeometry(sh,{depth:mm(WT),bevelEnabled:false}),gOut||mats.wall);m.position.set(mm(x0),0,-mm(WT));m.castShadow=m.receiveShadow=true;if(!gOut)edges(m);root3.add(m);
+  if(gIn){const lin=new T3.Mesh(new T3.ShapeGeometry(sh),gIn);lin.position.set(mm(x0),0,.002);lin.receiveShadow=true;root3.add(lin)}
   holes.forEach(([a,b,y0,y1,door])=>{if(!door)boxA(mm(a),-.32,mm(b),-.27,mm(y0),mm(y1),mats.glass)})}
 function glazedScreen(){const y0=9397-150,y1=9397;boxA(0,mm(y0),mm(12054),mm(y1),.05,2.9,mats.glass);boxA(0,mm(y0),mm(12054),mm(y1),2.9,3,mats.dark);boxA(0,mm(y0),mm(12054),mm(y1),0,.05,mats.dark);
   for(let x=0;x<=12054;x+=1200)boxA(mm(x),mm(y0),mm(Math.min(x+60,12054)),mm(y1),0,2.9,mats.dark,null,true)}
@@ -989,7 +1089,7 @@ async function setView(v){const on=v==='3d';V3.on=on;stage.dataset.view=v;docume
   $('#toolSeg').style.visibility=on?'hidden':'';$('#three').hidden=!on;$('#bar3d').hidden=!on;
   if(on){setTool('select');$('#hint').innerHTML='<b>3D:</b> drag to orbit, right-drag or two fingers to pan, scroll to zoom. Click an item to select it.';$('#load3d').hidden=V3.ready;
     try{await ensure3D();$('#load3d').hidden=true;size3D();V3.dirty=true}catch(err){$('#load3d').textContent=err.message+' Check your connection and try again.'}}
-  else{setWalk&&V3.ready&&setWalk(false);setTool(tool);render()}}
+  else{if(V3.ready&&V3.walk)setWalk(false);setTool(tool);render()}}
 document.querySelectorAll('.views button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 $('#bar3d').addEventListener('click',e=>{const b=e.target.closest('[data-cam]');if(b&&V3.ready)camPreset(b.dataset.cam)});
 $('#walkBtn').addEventListener('click',()=>{if(V3.ready)setWalk(!V3.walk)});
@@ -1013,7 +1113,7 @@ function setStatus(t,err){const e=$('#dstat');e.textContent=t;e.classList.toggle
 function renderDesignBar(){const d=curDoc();$('#dname').textContent=d?d.name:'No design open';if(!d)setStatus(designs.length?'pick a design':'start a design');else if(saveErr)setStatus('not saved, retrying',1);else if(dirty||saving)setStatus('saving…');else setStatus('saved · '+ago(d.updatedAt))}
 function openDesign(id){flushSave();const d=designs.find(x=>x.id===id);if(!d)return;cur=id;ls.set('lbph-cur',id);
   S={items:JSON.parse(JSON.stringify(d.items||[])),walls:JSON.parse(JSON.stringify(d.walls||[])),dims:JSON.parse(JSON.stringify(d.dims||[]))};
-  hist=[];fut=[];sel=null;span=null;ensureOrphans();$('#designs').hidden=true;renderDesignBar();render();renderInspector()}
+  hist=[];fut=[];sel=null;span=null;ensureOrphans();V3.dirty=true;$('#designs').hidden=true;renderDesignBar();render();renderInspector()}
 function scheduleSave(){if(!cur)return;dirty=true;renderDesignBar();clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,900)}
 function flushSave(){if(dirty){clearTimeout(saveTimer);saveNow()}}
 async function saveNow(){const d=curDoc();if(!d)return;if(saving){saveTimer=setTimeout(saveNow,400);return}
@@ -1032,7 +1132,7 @@ async function delDesign(id){const d=designs.find(x=>x.id===id);if(!d)return;
   catch(e){if(!e.auth)toast('Could not delete: '+e.message)}}
 async function renameDesign(id,name){const d=designs.find(x=>x.id===id);if(!d||!name.trim())return;d.name=name.trim();if(id===cur){scheduleSave()}else{try{await putDesign(d)}catch(e){if(!e.auth)toast('Could not rename: '+e.message)}}renderDesigns();renderDesignBar();renderInspector()}
 async function pull(initial){let data;try{data=await api('/api/data')}catch(e){if(!e.auth&&initial)setStatus('offline – retrying',1);return}
-  lastPullOk=Date.now();catalog=(data.catalog||[]).sort((a,b)=>(a.name||'').localeCompare(b.name||''));applyCatalog();
+  lastPullOk=Date.now();{const nt=(data.textures||[]).map(t=>t.hasImage?{...t,data:'/api/textures?id='+encodeURIComponent(t.id)}:t).sort((a,b)=>(a.name||'').localeCompare(b.name||''));const ch=JSON.stringify(nt.map(t=>t.id+t.updatedAt))!==JSON.stringify(textures.map(t=>t.id+t.updatedAt));textures=nt;if(ch){Object.keys(mats).filter(k=>k.startsWith('fin:t:')).forEach(k=>delete mats[k]);V3.dirty=true;if(!$('#finModal').hidden)renderFinishes()}}catalog=(data.catalog||[]).sort((a,b)=>(a.name||'').localeCompare(b.name||''));applyCatalog();
   const remote=(data.designs||[]).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   const mine=curDoc();designs=remote;
   if(initial){const want=ls.get('lbph-cur');const pick=designs.find(d=>d.id===want)||designs[0];if(pick)openDesign(pick.id);else{renderDesignBar();openDesigns()}}

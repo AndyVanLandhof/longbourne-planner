@@ -23,10 +23,22 @@ export async function readText(url) {
   }
   throw err;
 }
+export async function readBuffer(url) {
+  let err;
+  for (const access of order()) {
+    try {
+      const r = await get(url, { access, useCache: false });
+      if (!r || !r.stream) throw new Error('not found');
+      ACCESS = access;
+      return Buffer.from(await new Response(r.stream).arrayBuffer());
+    } catch (e) { err = e; }
+  }
+  throw err;
+}
 export { list, del };
 
 const KEEP = 20; // versions kept per design / item, newest first
-const KINDS = new Set(['designs', 'catalog']);
+const KINDS = new Set(['designs', 'catalog', 'textures']);
 
 export function checkAuth(req, res) {
   const pass = process.env.APP_PASSCODE;
