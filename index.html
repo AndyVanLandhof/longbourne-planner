@@ -11,7 +11,7 @@
   --desk:#E8ECEC; --panel:#FBFCFC; --sheet:#FFFFFF; --ink:#17212B; --muted:#5F6B75; --rule:#D6DDE0;
   --grid:#EDF1F2; --grid2:#DCE3E6; --wall:#27333E; --floor:#FFFFFF; --loggia:#EEF2ED; --glass:#BFE2E9;
   --ref:#6C84C8; --sel:#0D7C87; --dim:#C23B22; --item:#FFFFFF; --itemline:#2E3A45;
-  --water:#D2EBF0; --wood:#E6D3B3; --turf:#C6E1B8; --house:#C9CFD3; --btn:#FFFFFF; --btnhover:#EEF3F4;
+  --water:#D2EBF0; --wood:#E6D3B3; --turf:#C6E1B8; --house:#C9CFD3; --btn:#FFFFFF; --btnhover:#EEF3F4; --struct:#F4CDB5;
   --z-office:#3E6BD6; --z-relax:#C47F12; --z-golf:#3A8A4D; --z-spa:#1990A1; --z-bar:#9450A8; --z-store:#7B8792; --z-plant:#9A6A3E; --z-other:#5F6B75;
   --f-title:"Barlow Condensed","Arial Narrow",sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -21,14 +21,14 @@
   --desk:#101519; --panel:#171E24; --sheet:#1B232A; --ink:#E5EBEE; --muted:#93A1AB; --rule:#2B353E;
   --grid:#212A32; --grid2:#2B353E; --wall:#C3CED6; --floor:#232D35; --loggia:#1D2823; --glass:#2C5661;
   --ref:#8297DA; --sel:#43C6D1; --dim:#FF7B5E; --item:#27323B; --itemline:#C3CED6;
-  --water:#21505A; --wood:#5B4931; --turf:#2F4C36; --house:#3A444C; --btn:#212A31; --btnhover:#2A353E;
+  --water:#21505A; --wood:#5B4931; --turf:#2F4C36; --house:#3A444C; --btn:#212A31; --btnhover:#2A353E; --struct:#7A4A36;
   --z-office:#7C9CF0; --z-relax:#E6A63E; --z-golf:#6BC07F; --z-spa:#4CC4D3; --z-bar:#C88BDA; --z-store:#A3AEB7; --z-plant:#CC9A6C; --z-other:#93A1AB;
   color-scheme:dark }}
 :root[data-theme="dark"]{
   --desk:#101519; --panel:#171E24; --sheet:#1B232A; --ink:#E5EBEE; --muted:#93A1AB; --rule:#2B353E;
   --grid:#212A32; --grid2:#2B353E; --wall:#C3CED6; --floor:#232D35; --loggia:#1D2823; --glass:#2C5661;
   --ref:#8297DA; --sel:#43C6D1; --dim:#FF7B5E; --item:#27323B; --itemline:#C3CED6;
-  --water:#21505A; --wood:#5B4931; --turf:#2F4C36; --house:#3A444C; --btn:#212A31; --btnhover:#2A353E;
+  --water:#21505A; --wood:#5B4931; --turf:#2F4C36; --house:#3A444C; --btn:#212A31; --btnhover:#2A353E; --struct:#7A4A36;
   --z-office:#7C9CF0; --z-relax:#E6A63E; --z-golf:#6BC07F; --z-spa:#4CC4D3; --z-bar:#C88BDA; --z-store:#A3AEB7; --z-plant:#CC9A6C; --z-other:#93A1AB;
   color-scheme:dark }
 
@@ -172,6 +172,9 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
 .house{fill:url(#hatch);stroke:var(--muted);stroke-width:.8}
 .vent{fill:url(#hatch);stroke:var(--muted);stroke-width:1}
 .pier{fill:var(--wall)}
+.struct{fill:var(--struct);stroke:var(--wall);stroke-width:1}
+.fstair{fill:var(--floor);stroke:var(--wall);stroke-width:1.2}
+.ftread{stroke:var(--wall);stroke-width:.8;fill:none}
 .gmin{stroke:var(--grid);stroke-width:1;fill:none}
 .gmaj{stroke:var(--grid2);stroke-width:1;fill:none}
 .ref{stroke:var(--ref);stroke-width:.8;stroke-dasharray:14 4 2 4;fill:none;opacity:.65}
@@ -320,18 +323,21 @@ const svg=$('#cv'), world=$('#world'), stage=$('#stage'), insp=$('#insp');
 /* ---------- Shell, traced from 5702-PH-A-102 rev T2 at 1:50. mm, origin = grid A / grid 1, y runs south ---------- */
 const GX={A:0,B:1688,C:7738,D:12328,E:15328,F:18022,G:21022,H:25523};
 const GY={1:0,2:4632,3:8610,4:9397,5:12469,6:14113,7:18003,8:19804};
-const POLY=[[0,9397],[12630,9397],[12630,0],[20798,0],[20798,9050],[25298,9050],[25298,17860],[17850,17860],[17850,19600],[15450,19600],[15450,17860],[7790,17860],[7790,14216],[1757,14216],[1757,12200],[0,12200]];
+const POLY=[[0,9397],[12630,9397],[12630,0],[20798,0],[20798,9050],[25298,9050],[25298,17860],[17850,17860],[17850,19600],[15450,19600],[15450,17860],[7790,17860],[7790,13860],[1757,13860],[1757,12200],[0,12200]];
 const WT=576;
 const LOGGIA={x:0,y:1483,w:12054,h:7764};
 const PIERS=[[530,4612],[4212,4612],[7923,4612],[11663,4612]].map(([x,y])=>({x:x-225,y:y-225,w:450,h:450}));
 const DOORS=[{n:'DR-04',x:15810,y:-576,w:1673,h:576},{n:'DR-05',x:22359,y:8474,w:1601,h:576},{n:'DR-06',x:-576,y:10170,w:576,h:874}];
 const WINS=[{n:'WD-01',x:12054,y:1803,w:576,h:1091},{n:'WD-02',x:13627,y:-576,w:801,h:576},{n:'WD-03',x:18939,y:-576,w:801,h:576},{n:'WD-04',x:20798,y:4204,w:576,h:2038},{n:'WD-05',x:25298,y:10171,w:576,h:1819},{n:'WD-06',x:25298,y:15555,w:576,h:800}];
 const VENT={x:7443,y:18436,w:3201,h:1048};
+// Fixed elements kept from the approved scheme (5702-PH-A-102 T2): the basement stair and the shaded structural strip above it.
+const STRUCT={x:2996,y:12200,w:4590,h:540};
+const STAIR={x:2996,y:12740,w:4590,h:1120};
 const ROOMS=[
   {n:'Main hall',x:12630,y:0,w:8168,h:17860},
   {n:'East wing',x:20798,y:9050,w:4500,h:8810},
   {n:'Link',x:0,y:9397,w:12630,h:2803},
-  {n:'Former stair & WCs',x:1757,y:12200,w:6033,h:2016},
+  {n:'Stair hall',x:1757,y:12200,w:6033,h:1660,nolabel:true},
   {n:'Former changing',x:7790,y:12200,w:4840,h:5660},
   {n:'Alcove',x:15450,y:17860,w:2400,h:1740},
   {n:'Covered loggia (outside)',x:0,y:1483,w:12054,h:7764,out:true},
@@ -348,7 +354,7 @@ const CAT=[
   ['zone-plant','Plant room',3000,2500,'zone',{zt:'plant'}],['zone-other','Other zone',3000,3000,'zone',{zt:'other'}]]},
  {g:'Structure',t:'--z-other',items:[
   ['door','Door 900',900,900,'door',{sq:1}],['door2','Double door 1600',1600,800,'door2'],['slide','Sliding door',1800,150,'slide'],
-  ['column','Column',300,300,'column'],['stair','Basement stair (approved)',5430,1760,'stair'],['cupboard','Built-in cupboard',1200,600,'cupboard']]},
+  ['column','Column',300,300,'column'],['stair','Extra stair',4548,1084,'stair'],['cupboard','Built-in cupboard',1200,600,'cupboard']]},
  {g:'Golf',t:'--z-golf',items:[
   ['golfbox','Zen studio 16′×8′ (as drawn)',5540,4810,'golf'],['golfopen','Simulator bay (open)',5000,4000,'golfopen'],
   ['putt','Putting green',6000,2500,'putt',{flat:1}],['hitmat','Hitting mat',1500,1500,'mat',{flat:1}],['clubrack','Club rack',1200,400,'rack']]},
@@ -402,7 +408,7 @@ function rectPts(r){return [[r.x,r.y],[r.x+r.w,r.y],[r.x+r.w,r.y+r.h],[r.x,r.y+r
 function ring(p){const s=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];s.push([a[0],a[1],b[0],b[1]])}return s}
 function polyArea(p){let a=0;for(let i=0;i<p.length;i++){const [x1,y1]=p[i],[x2,y2]=p[(i+1)%p.length];a+=x1*y2-x2*y1}return Math.abs(a)/2}
 const SHELL_AREA=polyArea(POLY);
-function shellSegs(){let s=ring(POLY);s=s.concat(ring(rectPts(LOGGIA)));PIERS.forEach(p=>s=s.concat(ring(rectPts(p))));return s}
+function shellSegs(){let s=ring(POLY);s=s.concat(ring(rectPts(LOGGIA)));PIERS.forEach(p=>s=s.concat(ring(rectPts(p))));s=s.concat(ring(rectPts(STRUCT)),ring(rectPts(STAIR)));return s}
 const SHELLSEGS=shellSegs();
 function isFlat(it){const c=CATMAP[it.k];return !c||c.s==='zone'||c.flat}
 function obstacleSegs(ex){let s=SHELLSEGS.slice();S.walls.forEach(w=>{if(w.id!==ex)s=s.concat(ring(wallCorners(w)))});S.items.forEach(it=>{if(it.id!==ex&&!isFlat(it))s=s.concat(ring(corners(it)))});return s}
@@ -418,7 +424,7 @@ function clearances(it){const segs=obstacleSegs(it.id),a=it.w/2,b=it.d/2,out=[];
   return out}
 
 /* ---------- Snapping ---------- */
-function snapVerts(ex){const v=POLY.slice();rectPts(LOGGIA).forEach(p=>v.push(p));S.walls.forEach(w=>{if(w.id!==ex){v.push([w.x1,w.y1],[w.x2,w.y2]);wallCorners(w).forEach(p=>v.push(p))}});S.items.forEach(it=>{if(it.id!==ex)corners(it).forEach(p=>v.push(p))});S.dims.forEach(d=>{if(d.id!==ex)v.push([d.x1,d.y1],[d.x2,d.y2])});return v}
+function snapVerts(ex){const v=POLY.slice();rectPts(LOGGIA).forEach(p=>v.push(p));rectPts(STRUCT).concat(rectPts(STAIR)).forEach(p=>v.push(p));S.walls.forEach(w=>{if(w.id!==ex){v.push([w.x1,w.y1],[w.x2,w.y2]);wallCorners(w).forEach(p=>v.push(p))}});S.items.forEach(it=>{if(it.id!==ex)corners(it).forEach(p=>v.push(p))});S.dims.forEach(d=>{if(d.id!==ex)v.push([d.x1,d.y1],[d.x2,d.y2])});return v}
 const g50=v=>Math.round(v/50)*50;
 function snapPt(x,y,from,free,ex){const tol=12/view.s;snapHit=null;
   if(from&&!free){if(Math.abs(x-from[0])>Math.abs(y-from[1]))y=from[1];else x=from[0]}
@@ -533,10 +539,11 @@ function render(){
   o+=`<path d="M${POLY.map(p=>p.join(' ')).join('L')}Z" class="floorp"/>`;
   PIERS.forEach(p=>o+=`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" class="pier"/>`);
   o+=`<rect x="${VENT.x}" y="${VENT.y}" width="${VENT.w}" height="${VENT.h}" class="vent"/>`;
+  o+=fixedStair();
   if(opt.openings){DOORS.forEach(d=>o+=`<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" class="door"/>`);WINS.forEach(d=>o+=`<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" class="win"/>`)}
   // labels for shell
   const fsR=10.5*px;
-  if(opt.rooms){ROOMS.forEach(r=>{if(r.w*view.s<70)return;const cx=r.x+r.w/2,cy=r.y+(r.out?r.h*.18:Math.min(r.h/2,r.h-1400));if(r.w*view.s<110&&!r.out)return;o+=`<text x="${n(cx)}" y="${n(cy)}" class="room" font-size="${n(fsR*1.15)}">${r.n}</text><text x="${n(cx)}" y="${n(cy+fsR*1.5)}" class="roomd" font-size="${n(fsR*.95)}">${fmtWD(r.w,r.h)}</text>`});
+  if(opt.rooms){ROOMS.forEach(r=>{if(r.nolabel||r.w*view.s<70)return;const cx=r.x+r.w/2,cy=r.y+(r.out?r.h*.18:Math.min(r.h/2,r.h-1400));if(r.w*view.s<110&&!r.out)return;o+=`<text x="${n(cx)}" y="${n(cy)}" class="room" font-size="${n(fsR*1.15)}">${r.n}</text><text x="${n(cx)}" y="${n(cy+fsR*1.5)}" class="roomd" font-size="${n(fsR*.95)}">${fmtWD(r.w,r.h)}</text>`});
     o+=`<text x="${n(-WT/2)}" y="${n(10800)}" class="roomd" font-size="${n(fsR*.9)}" transform="rotate(-90 ${n(-WT/2)} 10800)">existing house</text>`;
     if(VENT.w*view.s>60)o+=`<text x="${n(VENT.x+VENT.w/2)}" y="${n(VENT.y+VENT.h/2)}" class="roomd" font-size="${n(fsR*.9)}" dominant-baseline="central">vent shaft</text>`;
     if(opt.openings&&view.s>.045){DOORS.concat(WINS).forEach(d=>{const cx=d.x+d.w/2,cy=d.y+d.h/2;o+=`<text x="${n(cx)}" y="${n(cy)}" class="roomd" font-size="${n(fsR*.8)}" dominant-baseline="central">${d.n}</text>`})}}
@@ -582,6 +589,13 @@ function render(){
   const nice=[100,200,500,1000,2000,5000,10000];const L=nice.find(v=>v*view.s>=70)||10000;$('#scaleB').style.width=n(L*view.s)+'px';$('#scaleT').textContent=fmt(L);
   $('#undo').disabled=!hist.length;$('#redo').disabled=!fut.length;
 }
+function fixedStair(){const S2=STAIR,T=STRUCT;let o=`<rect x="${T.x}" y="${T.y}" width="${T.w}" height="${T.h}" class="struct"/><rect x="${S2.x}" y="${S2.y}" width="${S2.w}" height="${S2.h}" class="fstair"/>`;
+  const k=18,step=S2.w/k;let d='';for(let i=1;i<k;i++){const x=n(S2.x+step*i);d+=`M${x} ${S2.y}V${S2.y+S2.h}`}
+  const my=S2.y+S2.h/2;d+=`M${S2.x+S2.w-200} ${my}H${S2.x+120}M${S2.x+420} ${my-150}L${S2.x+120} ${my}L${S2.x+420} ${my+150}`;
+  o+=`<path d="${d}" class="ftread"/>`;const px=1/view.s;
+  if(S2.w*view.s>90){o+=`<text x="${n(S2.x+S2.w/2)}" y="${n(my)}" class="lbl" font-size="${n(10*px)}">Stair to basement</text>`}
+  if(T.w*view.s>120&&T.h*view.s>12){o+=`<text x="${n(T.x+T.w/2)}" y="${n(T.y+T.h/2)}" class="roomd" style="opacity:.9" font-size="${n(9*px)}" dominant-baseline="central">structure (as drawn)</text>`}
+  return o}
 function hdl(x,y,id,h,px){return `<circle cx="${n(x)}" cy="${n(y)}" r="${n(6*px)}" class="hdl" data-id="${id}" data-h="${h}"/>`}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function offsetPoly(p,t){const out=[];const N=p.length;for(let i=0;i<N;i++){const a=p[(i-1+N)%N],b=p[i],c=p[(i+1)%N];const n1=norm(a,b),n2=norm(b,c);const k=1+n1[0]*n2[0]+n1[1]*n2[1];out.push([b[0]+(n1[0]+n2[0])*t/k,b[1]+(n1[1]+n2[1])*t/k])}return out}
@@ -623,7 +637,7 @@ function renderInspector(){let h='';
       <div class="row"><button class="ib" data-act="keepspan">Keep as measurements</button><button class="ib" data-act="clearspan">Clear</button></div></section>`}
   else{h+=`<section><h2>The empty shell</h2><div class="big">${fmtA(SHELL_AREA)}<small>enclosed floor</small></div>
       <table class="kv">${ROOMS.map(r=>`<tr><td>${r.n}</td><td>${fmtWD(r.w,r.h)}</td></tr>`).join('')}</table>
-      <p class="note">Pool, spa, changing rooms, WCs and every internal wall are removed. The loggia is covered but open-sided, so it is not in the enclosed total.</p></section>`}
+      <p class="note">The basement stair and the structural strip above it stay where Laith drew them. Pool, spa, changing rooms, WCs and every other internal wall are removed. The loggia is covered but open-sided, so it is not in the enclosed total.</p></section>`}
   const zs=zoneStats();if(zs.length){let tot=0;h+=`<section><h2>Zones</h2><table class="kv">${zs.map(z=>{tot+=z.w*z.d;return `<tr style="--zc:var(${ZT[z.zt||'other'][1]})"><td><span class="sw"></span>${esc(z.label||ZT[z.zt||'other'][0])}</td><td>${fmtA(z.w*z.d)}</td></tr>`}).join('')}<tr class="tot"><td>Zoned</td><td>${fmtA(tot)}</td></tr><tr><td>Enclosed shell</td><td>${fmtA(SHELL_AREA)}</td></tr></table></section>`}
   h+=`<section><h2>Show and snap</h2><div class="checks">
     <label><input type="checkbox" id="o-clear" data-o="clear"${opt.clear?' checked':''}> Space around selected item</label>
@@ -782,8 +796,7 @@ function sample(){const I=(k,x,y,o={})=>{const c=CATMAP[k];return {id:nid(),k,x,
    I('lounger',19700,13600),I('lounger',19700,14600),I('lounger',19700,15600),I('rug',15800,11300,{w:3600,d:2600}),
    I('zone-office',23048,11275,{w:4500,d:4450}),I('desk',23600,9850),I('dchair',23600,10600,{rot:180}),I('books',25123,11800,{rot:90}),I('armchair',21600,12300),
    I('zone-bar',23048,15680,{w:4500,d:4360}),I('kitchen',23600,17560),I('island',23600,15500),I('stool',22700,14700),I('stool',23600,14700),I('stool',24500,14700),
-   I('zone-spa',10210,16038,{w:4840,d:3644}),I('sauna4',8900,15300),I('plunge',11500,14850),I('shower',11950,17360),I('wc',8200,17480),I('basin',9000,17600),
-   I('stair',4773,13208)]}}
+   I('zone-spa',10210,16038,{w:4840,d:3644}),I('sauna4',8900,15300),I('plunge',11500,14850),I('shower',11950,17360),I('wc',8200,17480),I('basin',9000,17600)]}}
 
 /* ---------- Shared store (Vercel API) ---------- */
 const GROUPS={golf:'--z-golf',spa:'--z-spa',relax:'--z-relax',office:'--z-office',bar:'--z-bar',store:'--z-store',other:'--z-other'};
@@ -831,7 +844,7 @@ async function pull(initial){let data;try{data=await api('/api/data')}catch(e){i
     else if(mine&&(dirty||saving||drag)){designs[designs.indexOf(r)]=mine}
     else if(mine&&r.updatedAt>(mine.updatedAt||0)){const keep=sel;openDesign(cur);if(keep&&find(keep.id))sel=keep;toast(`Updated with ${r.updatedBy||'someone'}'s latest changes.`);render();renderInspector()}}
   renderPalette();renderDesignBar();if(!$('#designs').hidden)renderDesigns()}
-function thumb(d){const pts=POLY.map(p=>p.join(' ')).join('L');let o=`<svg viewBox="${FIT.x} ${FIT.y} ${FIT.w} ${FIT.h}" aria-hidden="true"><rect x="${LOGGIA.x}" y="${LOGGIA.y}" width="${LOGGIA.w}" height="${LOGGIA.h}" fill="var(--loggia)"/><path d="M${offsetPoly(POLY,WT).map(p=>p.map(n).join(' ')).join('L')}Z" fill="var(--wall)"/><path d="M${pts}Z" fill="var(--floor)"/>`;
+function thumb(d){const pts=POLY.map(p=>p.join(' ')).join('L');let o=`<svg viewBox="${FIT.x} ${FIT.y} ${FIT.w} ${FIT.h}" aria-hidden="true"><rect x="${LOGGIA.x}" y="${LOGGIA.y}" width="${LOGGIA.w}" height="${LOGGIA.h}" fill="var(--loggia)"/><path d="M${offsetPoly(POLY,WT).map(p=>p.map(n).join(' ')).join('L')}Z" fill="var(--wall)"/><path d="M${pts}Z" fill="var(--floor)"/><rect x="${STRUCT.x}" y="${STRUCT.y}" width="${STRUCT.w}" height="${STRUCT.h}" fill="var(--struct)"/><rect x="${STAIR.x}" y="${STAIR.y}" width="${STAIR.w}" height="${STAIR.h}" fill="none" stroke="var(--wall)" stroke-width="80"/>`;
   (d.items||[]).forEach(it=>{const c=CATMAP[it.k];const z=c&&c.s==='zone';const col=z?`var(${ZT[it.zt||'other'][1]})`:'var(--itemline)';o+=`<rect x="${n(-it.w/2)}" y="${n(-it.d/2)}" width="${n(it.w)}" height="${n(it.d)}" transform="translate(${n(it.x)} ${n(it.y)}) rotate(${it.rot||0})" fill="${col}" fill-opacity="${z?.16:.55}" stroke="${z?col:'none'}" stroke-width="60"/>`});
   (d.walls||[]).forEach(w=>o+=`<line x1="${n(w.x1)}" y1="${n(w.y1)}" x2="${n(w.x2)}" y2="${n(w.y2)}" stroke="var(--wall)" stroke-width="${Math.max(w.t,120)}"/>`);return o+'</svg>'}
 let confirmDel=null,renaming=null;
