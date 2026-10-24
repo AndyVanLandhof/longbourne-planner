@@ -1004,9 +1004,20 @@ function build3D(){clear3D();pick=[];
       root3.add(new T3.LineLoop(new T3.BufferGeometry().setFromPoints(corners(z).map(([x,y])=>new T3.Vector3(mm(x),.01,mm(y)))),new T3.LineBasicMaterial({color:c})));return}const m=new T3.Mesh(new T3.PlaneGeometry(mm(z.w),mm(z.d)),new T3.MeshBasicMaterial({color:c,transparent:true,opacity:.22,depthWrite:false}));m.rotation.x=-Math.PI/2;m.rotation.z=-(z.rot||0)*Math.PI/180;m.position.set(mm(z.x),.006,mm(z.y));root3.add(m);
     const ln=new T3.LineLoop(new T3.BufferGeometry().setFromPoints(corners(z).map(([x,y])=>new T3.Vector3(mm(x),.01,mm(y)))),new T3.LineBasicMaterial({color:c}));root3.add(ln)});
   // user walls
-  S.walls.forEach(w=>{const L=Math.hypot(w.x2-w.x1,w.y2-w.y1);if(L<1)return;const wf=finMat(w.finish||dFin('walls'));const m=new T3.Mesh(new T3.BoxGeometry(mm(L),2.4,mm(w.t)),wf||mats.wallIn);if(wf){const p=m.position;worldUV(m)}m.position.set(mm((w.x1+w.x2)/2),1.2,mm((w.y1+w.y2)/2));m.rotation.y=-Math.atan2(w.y2-w.y1,w.x2-w.x1);m.castShadow=m.receiveShadow=true;if(!wf)edges(m);m.userData={id:w.id,type:'wall'};root3.add(m);pick.push(m);if(sel&&sel.id===w.id)selBox(m)});
+  const DO=doorOpenings();doorWallT=DO.thick;
+  S.walls.forEach(w=>{const L=Math.hypot(w.x2-w.x1,w.y2-w.y1);if(L<1)return;const wf=finMat(w.finish||dFin('walls'))||mats.wallIn;const g=new T3.Group();g.position.set(mm(w.x1),0,mm(w.y1));g.rotation.y=-Math.atan2(w.y2-w.y1,w.x2-w.x1);
+    const t=mm(w.t),H=2.4;const piece=(u0,u1,y0,y1)=>{const m=boxA(mm(u0),-t/2,mm(u1),t/2,y0,y1,wf,g);if(m){m.userData={id:w.id,type:'wall'};pick.push(m)}};
+    let u=0;(DO.byWall[w.id]||[]).sort((p,q)=>p.s0-q.s0).forEach(o=>{if(o.s0>u)piece(u,o.s0,0,H);piece(Math.max(u,o.s0),o.s1,Math.min(mm(o.h),H),H);u=Math.max(u,o.s1)});if(u<L)piece(u,L,0,H);
+    root3.add(g);if(sel&&sel.id===w.id)selBox(g)});
   // items
   S.items.filter(i=>CATMAP[i.k]?.s!=='zone').forEach(it=>{const grp=item3D(it);grp.position.set(mm(it.x),0,mm(it.y));grp.rotation.y=-(it.rot||0)*Math.PI/180;grp.traverse(o=>{if(o.isMesh){o.userData={id:it.id,type:'item'};pick.push(o)}});root3.add(grp);if(sel&&sel.id===it.id)selBox(grp)})}
+// Doors sitting on a drawn wall cut an opening in it; returns openings per wall and each door's wall thickness.
+let doorWallT={};
+function doorOpenings(){const byWall={},thick={};S.items.forEach(it=>{const s2=CATMAP[it.k]?.s;if(!['door','door2','slide'].includes(s2))return;const yl=s2==='slide'?0:it.d/2;
+  const p1=rot(-it.w/2,yl,it.rot||0),p2=rot(it.w/2,yl,it.rot||0),A=[it.x+p1[0],it.y+p1[1]],B=[it.x+p2[0],it.y+p2[1]];
+  for(const w of S.walls){const dx=w.x2-w.x1,dy=w.y2-w.y1,L=Math.hypot(dx,dy);if(L<1)continue;const ux=dx/L,uy=dy/L,off=P=>Math.abs((P[0]-w.x1)*-uy+(P[1]-w.y1)*ux),tol=w.t/2+150;
+    if(off(A)>tol||off(B)>tol)continue;const sA=(A[0]-w.x1)*ux+(A[1]-w.y1)*uy,sB=(B[0]-w.x1)*ux+(B[1]-w.y1)*uy,s0=Math.max(0,Math.min(sA,sB)),s1=Math.min(L,Math.max(sA,sB));if(s1-s0<200)continue;
+    (byWall[w.id]=byWall[w.id]||[]).push({s0,s1,h:itemH(it)});thick[it.id]=w.t;break}});return {byWall,thick}}
 function selBox(o){const b=new T3.BoxHelper(o,new T3.Color(cssv('--sel')));root3.add(b)}
 // box faces: +X,-X,+Y,-Y,+Z,-Z. The face pointing into the building gets the inside finish.
 function wallMats(n){const out=finMat(dFin('wallsOut'))||mats.wall,inn=finMat(dFin('wallsIn'))||mats.wall;if(out===mats.wall&&inn===mats.wall)return mats.wall;const arr=[out,out,out,out,out,out];
@@ -1065,7 +1076,12 @@ function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new
     case 'bed':B(-a,-b,a,b,h-.12,h,tint);legs(h-.12);break;
     case 'golf':B(-a,-b,a,b,0,h,mats.glass);B(-a+.2,-b+.06,a-.2,-b+.1,.05,h-.1,mats.white);B(-.75,b-d*.32-.75,.75,b-d*.32+.75,0,.03,mats.turf);B(-a,-b,a,-b+.06,h-.06,h,mats.dark);break;
     case 'golfopen':B(-a+.2,-b+.06,a-.2,-b+.1,.05,h-.1,mats.white);B(-.75,b-d*.32-.75,.75,b-d*.32+.75,0,.03,mats.turf);break;
-    case 'door':case 'door2':case 'slide':B(-a,-b,-a+.05,b,0,h,mats.dark);B(a-.05,-b,a,b,0,h,mats.dark);B(-a,-b,a,b,h-.05,h,mats.dark);break;
+    case 'door':case 'door2':case 'slide':{// slim frame on the opening line, as deep as the wall it sits in; leaf shown open as on the plan
+      const yl=c.s==='slide'?0:b,t=mm(doorWallT[it.id]||100)+.01,f=.045,lt=.04,wood=M('doorleaf',()=>std('#b48a5a'));
+      B(-a,yl-t/2,-a+f,yl+t/2,0,h,mats.white);B(a-f,yl-t/2,a,yl+t/2,0,h,mats.white);B(-a,yl-t/2,a,yl+t/2,h-f,h,mats.white);
+      if(c.s==='door')B(-a+f,yl-(w-2*f),-a+f+lt,yl,.01,h-f,wood);
+      else if(c.s==='door2'){const lw=a-f;B(-a+f,yl-lw,-a+f+lt,yl,.01,h-f,wood);B(a-f-lt,yl-lw,a-f,yl,.01,h-f,wood)}
+      else B(-a+f,-.02,a*.15,.02,.01,h-f,mats.glass);break}
     case 'stair':{const k=Math.max(2,Math.floor(w/.26));for(let i=0;i<k;i++)B(-a+w*i/k,-b,-a+w*(i+1)/k,b,0,Math.max(.02,h*(i+1)/k),mats.stair);break}
     case 'tread':B(-a,-b,a,b,0,.2,tint2);B(a-.12,-b+.1,a,b-.1,.2,h,mats.dark);break;
     case 'c-circle':{const m=new T3.Mesh(new T3.CylinderGeometry(.5,.5,h,32),tint);m.scale.set(w,1,d);m.position.y=h/2;m.castShadow=true;edges(m);g.add(m);break}
