@@ -145,6 +145,19 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
 .card .ed{align-self:flex-end;margin-top:-4px;font-size:10.5px;color:var(--muted);text-decoration:underline;cursor:pointer;background:none;border:0;padding:0}
 .card.add{border-style:dashed;justify-content:center;align-items:center;min-height:74px;color:var(--muted)}
 .insp textarea{border:1px solid var(--rule);background:var(--sheet);border-radius:6px;padding:6px 7px;font-size:12.5px;width:100%;min-height:64px;resize:vertical}
+/* 3D view */
+#three{position:absolute;inset:0}
+#three canvas{display:block;width:100%;height:100%;touch-action:none}
+.stage[data-view="3d"] #cv,.stage[data-view="3d"] .zoombox,.stage[data-view="3d"] .coords,.stage[data-view="3d"] .scale{display:none}
+.bar3d{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;pointer-events:none}
+.bar3d>*{pointer-events:auto}
+.bar3d .ib{font-size:12px;padding:5px 9px}
+.bar3d .ib[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.bar3d select{border:1px solid var(--rule);background:var(--btn);border-radius:8px;padding:5px 8px;font-size:12px}
+.bar3d .lab{font-size:11px;color:var(--muted);background:color-mix(in srgb,var(--panel) 90%,transparent);padding:3px 6px;border-radius:6px}
+.loading3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+.stage[data-view="3d"]{cursor:grab}
+.seg.views button{padding:6px 12px}
 /* modal */
 .modal{position:fixed;inset:0;background:rgba(10,15,20,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .modal .box{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:16px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px}
@@ -219,7 +232,8 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
   <header class="bar">
     <div class="tb"><h1>Pool House Planner</h1><span>Longbourne · ground floor</span></div>
     <button class="ib dbtn" id="designBtn" title="All designs"><b id="dname">Loading…</b><small id="dstat">connecting</small></button>
-    <div class="seg" role="group" aria-label="Tools">
+    <div class="seg views" role="group" aria-label="View"><button data-view="2d" aria-pressed="true" title="Plan view">Plan</button><button data-view="3d" aria-pressed="false" title="3D view">3D</button></div>
+<div class="seg" role="group" aria-label="Tools" id="toolSeg">
       <button data-tool="select" aria-pressed="true" title="Select and move (V)"><svg class="ic" viewBox="0 0 16 16"><path d="M3 2l9 5-4 1.2L6.5 13z"/></svg><span class="t">Select</span> <kbd>V</kbd></button>
       <button data-tool="wall" aria-pressed="false" title="Draw walls (W)"><svg class="ic" viewBox="0 0 16 16"><path d="M2 12h12M2 9h12M2 12V9M14 12V9"/></svg><span class="t">Wall</span> <kbd>W</kbd></button>
       <button data-tool="measure" aria-pressed="false" title="Tape measure (M)"><svg class="ic" viewBox="0 0 16 16"><path d="M2 8h12M2 5v6M14 5v6M5 8v-1.5M8 8V6M11 8v-1.5"/></svg><span class="t">Measure</span> <kbd>M</kbd></button>
@@ -259,7 +273,17 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
         <div class="hint" id="hint"></div>
         <div class="coords" id="coords">—</div>
       </div>
-      <div class="toast" id="toast" hidden></div>
+      <div id="three" hidden></div>
+<div class="bar3d" id="bar3d" hidden>
+<button class="ib" data-cam="overview" title="View from above, outside">Overview</button>
+<button class="ib" data-cam="top" title="Straight down">Top</button>
+<button class="ib" data-cam="north" title="Stand in the hall looking at the north end">Look north</button>
+<button class="ib" data-cam="south" title="Stand at the north end looking south">Look south</button>
+<button class="ib" id="walkBtn" aria-pressed="false" title="Walk at eye height: drag to look, W A S D or arrows to move">Walk</button>
+<label class="lab" for="roof3d">Roof</label><select id="roof3d"><option value="off">Off</option><option value="glass">See-through</option><option value="solid">Solid</option></select>
+</div>
+<div class="loading3d" id="load3d" hidden>Loading 3D…</div>
+<div class="toast" id="toast" hidden></div>
     </div>
 
     <aside class="panel insp" id="insp" aria-label="Details"></aside>
@@ -283,7 +307,8 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
       <label class="full">Name<input type="text" id="ci-name" required maxlength="60" placeholder="e.g. Pool table 8ft"></label>
       <label>Width (mm)<input type="number" id="ci-w" required min="50" step="10" value="1000"></label>
       <label>Depth (mm)<input type="number" id="ci-d" required min="50" step="10" value="1000"></label>
-      <label>Type<select id="ci-g"><option value="golf">Golf</option><option value="spa">Spa</option><option value="relax">Relax</option><option value="office">Office</option><option value="bar">Kitchen & bar</option><option value="store">Storage</option><option value="other" selected>Other</option></select></label>
+      <label>Height (mm)<input type="number" id="ci-h" min="10" step="10" value="900"></label>
+<label>Type<select id="ci-g"><option value="golf">Golf</option><option value="spa">Spa</option><option value="relax">Relax</option><option value="office">Office</option><option value="bar">Kitchen & bar</option><option value="store">Storage</option><option value="other" selected>Other</option></select></label>
       <label>Shape<select id="ci-s"><option value="c-rect">Rectangle</option><option value="c-round">Rounded</option><option value="c-circle">Round / oval</option></select></label>
       <label class="full" style="flex-direction:row;align-items:center;gap:7px;color:var(--ink)"><input type="checkbox" id="ci-flat" style="width:auto"> Floor finish, like a rug or mat (ignored when measuring space)</label>
       <label class="full">Note or link (optional)<input type="text" id="ci-note" maxlength="300" placeholder="Supplier, model, URL"></label>
@@ -588,6 +613,7 @@ function render(){
   // scale bar
   const nice=[100,200,500,1000,2000,5000,10000];const L=nice.find(v=>v*view.s>=70)||10000;$('#scaleB').style.width=n(L*view.s)+'px';$('#scaleT').textContent=fmt(L);
   $('#undo').disabled=!hist.length;$('#redo').disabled=!fut.length;
+if(V3.on)queue3D();
 }
 function fixedStair(){const S2=STAIR,T=STRUCT;let o=`<rect x="${T.x}" y="${T.y}" width="${T.w}" height="${T.h}" class="struct"/><rect x="${S2.x}" y="${S2.y}" width="${S2.w}" height="${S2.h}" class="fstair"/>`;
   const k=18,step=S2.w/k;let d='';for(let i=1;i<k;i++){const x=n(S2.x+step*i);d+=`M${x} ${S2.y}V${S2.y+S2.h}`}
@@ -616,7 +642,8 @@ function renderInspector(){let h='';
         ${isZ?`<label class="full">Use<select id="f-zt" data-f="zt">${Object.entries(ZT).map(([k,v])=>`<option value="${k}"${k===(it.zt||'other')?' selected':''}>${v[0]}</option>`).join('')}</select></label>`:''}
         <label>Width (mm)<input type="number" id="f-w" data-f="w" step="10" min="50" value="${Math.round(it.w)}"></label>
         <label>Depth (mm)<input type="number" id="f-d" data-f="d" step="10" min="50" value="${Math.round(it.d)}"></label>
-        <label>Rotation (°)<input type="number" id="f-rot" data-f="rot" step="15" value="${Math.round(it.rot||0)}"></label>
+        ${isZ?'':`<label>Height (mm)<input type="number" id="f-h" data-f="h" step="10" min="10" value="${Math.round(itemH(it))}"></label>`}
+<label>Rotation (°)<input type="number" id="f-rot" data-f="rot" step="15" value="${Math.round(it.rot||0)}"></label>
         <label>&nbsp;<span class="row"><button class="ib" data-act="rotl" title="Rotate left 90°">⟲ 90°</button><button class="ib" data-act="rotr" title="Rotate right 90°">⟳ 90°</button></span></label>
         <label>West edge, from grid A (mm)<input type="number" id="f-x" data-f="x" step="50" value="${Math.round(it.x-(((it.rot||0)%180)?it.d:it.w)/2)}"></label>
         <label>North edge, from grid 1 (mm)<input type="number" id="f-y" data-f="y" step="50" value="${Math.round(it.y-(((it.rot||0)%180)?it.w:it.d)/2)}"></label>
@@ -666,7 +693,7 @@ function find(id){return S.items.find(i=>i.id===id)||S.walls.find(i=>i.id===id)|
 function select(s){sel=s;if(s)span=null;render();renderInspector()}
 function viewCentre(){return [view.ox+W/view.s/2,view.oy+H/view.s/2]}
 function addItem(k,x,y){const c=CATMAP[k];if(!c)return;if(x==null){[x,y]=viewCentre()}
-  if(!cur)return toast('Open or create a design first.');const it={id:nid(),k,x:g50(x),y:g50(y),w:c.w,d:c.d,rot:0};if(c.zt)it.zt=c.zt;if(c.custom){it.cn=c.n;it.cs=c.s;it.ct=c.t;if(c.flat)it.cflat=1}
+  if(!cur)return toast('Open or create a design first.');const it={id:nid(),k,x:g50(x),y:g50(y),w:c.w,d:c.d,rot:0};if(c.zt)it.zt=c.zt;if(c.custom){it.cn=c.n;it.cs=c.s;it.ct=c.t;it.h=c.h||900;if(c.flat)it.cflat=1}
   mutate(()=>{S.items.push(it);edgeSnapItem(it)});setTool('select');select({type:'item',id:it.id});closeSheets()}
 function delSel(){if(!sel)return;mutate(()=>{S.items=S.items.filter(i=>i.id!==sel.id);S.walls=S.walls.filter(i=>i.id!==sel.id);S.dims=S.dims.filter(i=>i.id!==sel.id)});sel=null;render();renderInspector()}
 function dupSel(){if(!sel)return;const o=find(sel.id);if(!o)return;const c=JSON.parse(JSON.stringify(o));c.id=nid();
@@ -725,7 +752,8 @@ svg.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e
 const endPt=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null};svg.addEventListener('pointerup',endPt,true);svg.addEventListener('pointercancel',endPt,true);
 
 /* ---------- Keyboard ---------- */
-document.addEventListener('keydown',e=>{altDown=e.altKey;shiftDown=e.shiftKey;const tg=e.target;if(tg.matches&&tg.matches('input,textarea,select'))return;if(!$('#login').hidden||!$('#citem').hidden||!$('#modal').hidden)return;const k=e.key,mod=e.metaKey||e.ctrlKey;
+document.addEventListener('keydown',e=>{altDown=e.altKey;shiftDown=e.shiftKey;const tg=e.target;if(tg.matches&&tg.matches('input,textarea,select'))return;if(!$('#login').hidden||!$('#citem').hidden||!$('#modal').hidden)return;
+if(V3.on){if(key3D(e,true))e.preventDefault();return}const k=e.key,mod=e.metaKey||e.ctrlKey;
   if(k===' '){spaceDown=true;e.preventDefault();return}
   if(mod&&k.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
   if(mod&&k.toLowerCase()==='y'){e.preventDefault();redo();return}
@@ -742,7 +770,7 @@ document.addEventListener('keydown',e=>{altDown=e.altKey;shiftDown=e.shiftKey;co
   if(lk==='f')return fit();if(k==='+'||k==='=')return zoomAt(1.25,W/2,H/2);if(k==='-'||k==='_')return zoomAt(.8,W/2,H/2);
   if(lk==='r'){rotSel(e.shiftKey?-90:90);return}
   if(k.startsWith('Arrow')&&sel){e.preventDefault();const st=e.shiftKey?100:10,dx=k==='ArrowLeft'?-st:k==='ArrowRight'?st:0,dy=k==='ArrowUp'?-st:k==='ArrowDown'?st:0;mutate(()=>{const o=find(sel.id);if('x1' in o){o.x1+=dx;o.x2+=dx;o.y1+=dy;o.y2+=dy}else{o.x+=dx;o.y+=dy}})}});
-document.addEventListener('keyup',e=>{altDown=e.altKey;shiftDown=e.shiftKey;if(e.key===' ')spaceDown=false});
+document.addEventListener('keyup',e=>{altDown=e.altKey;shiftDown=e.shiftKey;if(V3.on)key3D(e,false);if(e.key===' ')spaceDown=false});
 
 /* ---------- Inspector events ---------- */
 insp.addEventListener('change',e=>{const t=e.target;
@@ -753,6 +781,7 @@ insp.addEventListener('change',e=>{const t=e.target;
       if(f==='label')o.label=t.value.trim();else if(f==='zt'){o.zt=t.value}
       else if(f==='w'||f==='d'){const v=Math.max(50,+t.value||0);const sw=((o.rot||0)%180)!==0;const L=o.x-(sw?o.d:o.w)/2,T=o.y-(sw?o.w:o.d)/2;o[f]=v;if(CATMAP[o.k]?.sq){o.w=o.d=v}o.x=L+(sw?o.d:o.w)/2;o.y=T+(sw?o.w:o.d)/2}
       else if(f==='rot'){o.rot=(((+t.value||0)%360)+360)%360}
+else if(f==='h'){o.h=Math.max(10,+t.value||0)}
       else if(f==='x'){const sw=((o.rot||0)%180)!==0;o.x=(+t.value||0)+(sw?o.d:o.w)/2}
       else if(f==='y'){const sw=((o.rot||0)%180)!==0;o.y=(+t.value||0)+(sw?o.w:o.d)/2}}
     else if(sel.type==='wall'){if(f==='wl'){const L=Math.hypot(o.x2-o.x1,o.y2-o.y1)||1,v=Math.max(50,+t.value||0);o.x2=o.x1+(o.x2-o.x1)/L*v;o.y2=o.y1+(o.y2-o.y1)/L*v}if(f==='wt'){o.t=+t.value;wallT=o.t}}})});
@@ -798,6 +827,162 @@ function sample(){const I=(k,x,y,o={})=>{const c=CATMAP[k];return {id:nid(),k,x,
    I('zone-bar',23048,15680,{w:4500,d:4360}),I('kitchen',23600,17560),I('island',23600,15500),I('stool',22700,14700),I('stool',23600,14700),I('stool',24500,14700),
    I('zone-spa',10210,16038,{w:4840,d:3644}),I('sauna4',8900,15300),I('plunge',11500,14850),I('shower',11950,17360),I('wc',8200,17480),I('basin',9000,17600)]}}
 
+/* ---------- 3D view ---------- */
+const H3={sofa:800,arm:800,lsofa:800,chair:900,stool:750,table:750,desk:750,lounger:450,daybed:450,tv:1900,rug:10,shelf:2100,rack:1000,cupboard:2200,counter:900,island:900,fridge:1800,wc:780,basin:850,vanity2:850,bath:550,shower:2000,sauna:2100,steam:2200,plunge:1000,tub:900,bed:750,golf:3100,golfopen:3100,putt:20,mat:20,door:2100,door2:2100,slide:2100,column:2450,stair:60,tread:1400,yoga:10,'c-rect':900,'c-round':900,'c-circle':900,'c-flat':10,zone:5};
+function itemH(it){const c=CATMAP[it.k];if(it.h)return it.h;if(c&&c.custom)return c.h||900;return H3[c?c.s:'']||900}
+// Openings in the shell (mm). sill/top in mm above floor. From 5702-PH-A-201/202 T2.
+const OPEN3=[{x:22359,y:8474,w:1601,h:576,sill:0,top:2300,door:1},{x:-576,y:10170,w:576,h:874,sill:0,top:2100,door:1},
+ {x:12054,y:1803,w:576,h:1091,sill:200,top:2050},{x:20798,y:4204,w:576,h:2038,sill:230,top:2040},{x:25298,y:10171,w:576,h:1819,sill:180,top:2000},{x:25298,y:15555,w:576,h:800,sill:970,top:1600}];
+const ROOF={eave:2450,mid:4200,ridge:7230,shoulder:1600,hipIn:3100};
+const V3={on:false,ready:false,loading:null,roof:'off',walk:false,dirty:true};
+let T3,R3,scene3,cam3,ctrl3,root3,sun3,ground3,walkKeys={},yaw=0,pitch=0,lastT=0,pick=null,mats={};
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Could not load the 3D engine.'));document.head.appendChild(s)})}
+async function ensure3D(){if(V3.ready)return;if(!V3.loading)V3.loading=(async()=>{if(!window.THREE)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');if(!THREE.OrbitControls)await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');init3D();V3.ready=true})();return V3.loading}
+const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim()||'#888888';
+function col(v,mix){const c=new T3.Color(cssv(v));if(mix)c.lerp(new T3.Color('#ffffff'),mix);return c}
+function M(key,make){if(!mats[key])mats[key]=make();return mats[key]}
+function std(color,o={}){return new T3.MeshStandardMaterial({color,roughness:o.r??0.85,metalness:0,transparent:o.op!=null&&o.op<1,opacity:o.op??1,side:o.side||T3.FrontSide,depthWrite:o.op==null||o.op>=0.6})}
+function themeMats(){Object.values(mats).forEach(m=>m.dispose&&m.dispose());mats={};const dark=matchMedia('(prefers-color-scheme: dark)').matches&&document.documentElement.dataset.theme!=='light'||document.documentElement.dataset.theme==='dark';
+  mats.wall=std('#d8c79a');mats.wallIn=std('#efe9dc');mats.house=std('#c9ccc9');mats.floor=std('#e9e4da',{r:.95,side:T3.DoubleSide});mats.loggia=std('#d9d2c2');mats.glass=std('#9fd0dc',{op:.28,r:.1,side:T3.DoubleSide});
+  mats.roofSolid=std('#a4523b',{side:T3.DoubleSide});mats.roofGlass=std('#a4523b',{op:.22,side:T3.DoubleSide});mats.flat=std('#8a8f93',{side:T3.DoubleSide});mats.flatGlass=std('#8a8f93',{op:.18,side:T3.DoubleSide});
+  mats.struct=std(cssv('--struct'));mats.stair=std('#b9b1a3');mats.void=std('#3a3f44');mats.ground=std(dark?'#2a3530':'#cfd8c8',{r:1});mats.water=std('#6fb3c8',{r:.2});mats.wood=std('#c9a77a');mats.turf=std('#6aa457');mats.white=std('#f4f4f2');mats.dark=std('#2d3238');
+  if(scene3){const bg=new T3.Color(dark?'#1d252c':'#e9eef0');scene3.background=bg;scene3.fog=new T3.Fog(bg,70,190)}
+  mats.edge=new T3.LineBasicMaterial({color:dark?0xc8d0d6:0x2e3a45,transparent:true,opacity:.35});mats.sel=new T3.LineBasicMaterial({color:new T3.Color(cssv('--sel')),linewidth:2})}
+function init3D(){T3=THREE;const host=$('#three');R3=new T3.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});R3.setPixelRatio(Math.min(2,window.devicePixelRatio||1));R3.shadowMap.enabled=true;R3.shadowMap.type=T3.PCFSoftShadowMap;
+  R3.outputEncoding=T3.sRGBEncoding;host.appendChild(R3.domElement);scene3=new T3.Scene();cam3=new T3.PerspectiveCamera(50,1,0.05,500);
+  ctrl3=new T3.OrbitControls(cam3,R3.domElement);ctrl3.enableDamping=true;ctrl3.dampingFactor=.12;ctrl3.maxPolarAngle=Math.PI*.497;ctrl3.minDistance=.5;ctrl3.maxDistance=120;
+  scene3.add(new T3.HemisphereLight(0xffffff,0x9a9384,.62));sun3=new T3.DirectionalLight(0xfff6e8,.85);sun3.position.set(-12,32,-6);sun3.castShadow=true;sun3.shadow.mapSize.set(2048,2048);
+  const sc=sun3.shadow.camera;sc.left=-24;sc.right=24;sc.top=24;sc.bottom=-24;sc.near=1;sc.far=90;sun3.shadow.bias=-.0004;scene3.add(sun3);sun3.target.position.set(0,0,0);scene3.add(sun3.target);
+  root3=new T3.Group();root3.position.set(-12.7,0,-9.8);scene3.add(root3);themeMats();
+  new ResizeObserver(()=>size3D()).observe(host);size3D();camPreset('overview');
+  // picking: a click without a drag selects
+  let down=null;R3.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];if(V3.walk){R3.domElement.setPointerCapture(e.pointerId)}});
+  R3.domElement.addEventListener('pointermove',e=>{if(V3.walk&&down){yaw-=e.movementX*.0045;pitch=Math.max(-1.2,Math.min(1.2,pitch-e.movementY*.0045))}});
+  R3.domElement.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<5)pick3D(e);down=null});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(V3.ready){themeMats();V3.dirty=true}});
+  requestAnimationFrame(loop3D)}
+function size3D(){if(!R3)return;const r=$('#three').getBoundingClientRect();if(!r.width)return;R3.setSize(r.width,r.height,false);cam3.aspect=r.width/r.height;cam3.updateProjectionMatrix()}
+function loop3D(t){requestAnimationFrame(loop3D);if(!V3.on)return;const dt=Math.min(.05,(t-lastT)/1000||0);lastT=t;
+  if(V3.dirty){V3.dirty=false;build3D()}
+  if(V3.walk){const sp=(walkKeys.Shift?3:1.4)*dt,f=(walkKeys.w||walkKeys.ArrowUp?1:0)-(walkKeys.s||walkKeys.ArrowDown?1:0),sd=(walkKeys.d||walkKeys.ArrowRight?1:0)-(walkKeys.a||walkKeys.ArrowLeft?1:0);
+    cam3.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*sd)*sp;cam3.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*sd)*sp;cam3.position.y=1.6;cam3.rotation.set(pitch,yaw,0,'YXZ')}
+  else ctrl3.update();R3.render(scene3,cam3)}
+function key3D(e,down){const k=e.key.length===1?e.key.toLowerCase():e.key;if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Shift'].includes(k)){walkKeys[k]=down;return V3.walk}
+  if(down&&k==='Escape'&&V3.walk){setWalk(false);return true}if(down&&(k==='Delete'||k==='Backspace')&&sel){delSel();return true}return false}
+// world helpers: plan mm -> metres; plan y -> world z
+const mm=v=>v/1000;
+function edges(mesh){const l=new T3.LineSegments(new T3.EdgesGeometry(mesh.geometry,25),mats.edge);mesh.add(l);return mesh}
+function boxA(x0,z0,x1,z1,y0,y1,mat,parent,noEdge){const w=Math.abs(x1-x0),d=Math.abs(z1-z0),h=y1-y0;if(w<1e-4||d<1e-4||h<1e-4)return null;const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),mat);m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);m.castShadow=m.receiveShadow=mat.opacity>=1;if(!noEdge&&mat.opacity>=1)edges(m);(parent||root3).add(m);return m}
+function clear3D(){root3.traverse(o=>{if(o.geometry)o.geometry.dispose()});root3.clear()}
+function build3D(){clear3D();pick=[];
+  // ground
+  const g=new T3.Mesh(new T3.PlaneGeometry(400,400),mats.ground);g.rotation.x=-Math.PI/2;g.position.set(12.7,-.02,9.8);g.receiveShadow=true;root3.add(g);
+  // floor with stair void
+  const sh=new T3.Shape(POLY.map(([x,y])=>new T3.Vector2(mm(x),-mm(y))));const hole=new T3.Path(rectPts(STAIR).map(([x,y])=>new T3.Vector2(mm(x),-mm(y))));sh.holes.push(hole);
+  const fl=new T3.Mesh(new T3.ShapeGeometry(sh),mats.floor);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;root3.add(fl);
+  boxA(mm(LOGGIA.x),mm(LOGGIA.y),mm(LOGGIA.x+LOGGIA.w),mm(LOGGIA.y+LOGGIA.h),-.05,0,mats.loggia,null,true).receiveShadow=true;
+  // shell walls
+  const out=offsetPoly(POLY,WT);
+  for(let i=0;i<POLY.length;i++){const a=POLY[i],b=POLY[(i+1)%POLY.length],oa=out[i],ob=out[(i+1)%POLY.length];
+    const x0=Math.min(a[0],b[0],oa[0],ob[0]),x1=Math.max(a[0],b[0],oa[0],ob[0]),y0=Math.min(a[1],b[1],oa[1],ob[1]),y1=Math.max(a[1],b[1],oa[1],ob[1]);
+    const horiz=a[1]===b[1];
+    if(horiz&&a[1]===0&&Math.min(a[0],b[0])===12630){gable();continue}               // hall north end: clipped gable
+    if(horiz&&a[1]===9397&&Math.max(a[0],b[0])===12630){glazedScreen();continue}       // link to loggia: glazed screen
+    const isHouse=!horiz&&a[0]===0;const hallSide=!horiz&&(a[0]===12630||a[0]===20798)&&Math.max(a[1],b[1])<=9397;
+    const wingOuter=(!horiz&&a[0]===25298)||(horiz&&a[1]===9050&&Math.min(a[0],b[0])>=20798);
+    const H=hallSide?ROOF.eave:wingOuter?3075:3000;wallRun(x0,y0,x1,y1,horiz,H,isHouse?mats.house:mats.wall)}
+  PIERS.forEach(p=>boxA(mm(p.x),mm(p.y),mm(p.x+p.w),mm(p.y+p.h),0,3.285,mats.wall));
+  // structural strip and stair down to the basement
+  boxA(mm(STRUCT.x),mm(STRUCT.y),mm(STRUCT.x+STRUCT.w),mm(STRUCT.y+STRUCT.h),0,3,mats.struct);
+  const n=18,tw=STAIR.w/n,rise=3.06/n;for(let i=0;i<n;i++){const xa=mm(STAIR.x+STAIR.w-(i+1)*tw),xb=mm(STAIR.x+STAIR.w-i*tw);boxA(xa,mm(STAIR.y),xb,mm(STAIR.y+STAIR.h),-3.1,-(i+1)*rise,mats.stair)}
+  boxA(mm(STAIR.x)-.2,mm(STAIR.y+STAIR.h),mm(STAIR.x+STAIR.w),mm(STAIR.y+STAIR.h)+.2,-3.1,0,mats.void,null,true);boxA(mm(STAIR.x)-.2,mm(STAIR.y),mm(STAIR.x),mm(STAIR.y+STAIR.h),-3.1,0,mats.void,null,true);
+  roofs();
+  // zones
+  S.items.filter(i=>CATMAP[i.k]?.s==='zone').forEach(z=>{const c=new T3.Color(cssv(ZT[z.zt||'other'][1]));const m=new T3.Mesh(new T3.PlaneGeometry(mm(z.w),mm(z.d)),new T3.MeshBasicMaterial({color:c,transparent:true,opacity:.22,depthWrite:false}));m.rotation.x=-Math.PI/2;m.rotation.z=-(z.rot||0)*Math.PI/180;m.position.set(mm(z.x),.006,mm(z.y));root3.add(m);
+    const ln=new T3.LineLoop(new T3.BufferGeometry().setFromPoints(corners(z).map(([x,y])=>new T3.Vector3(mm(x),.01,mm(y)))),new T3.LineBasicMaterial({color:c}));root3.add(ln)});
+  // user walls
+  S.walls.forEach(w=>{const L=Math.hypot(w.x2-w.x1,w.y2-w.y1);if(L<1)return;const m=new T3.Mesh(new T3.BoxGeometry(mm(L),2.4,mm(w.t)),mats.wallIn);m.position.set(mm((w.x1+w.x2)/2),1.2,mm((w.y1+w.y2)/2));m.rotation.y=-Math.atan2(w.y2-w.y1,w.x2-w.x1);m.castShadow=m.receiveShadow=true;edges(m);m.userData={id:w.id,type:'wall'};root3.add(m);pick.push(m);if(sel&&sel.id===w.id)selBox(m)});
+  // items
+  S.items.filter(i=>CATMAP[i.k]?.s!=='zone').forEach(it=>{const grp=item3D(it);grp.position.set(mm(it.x),0,mm(it.y));grp.rotation.y=-(it.rot||0)*Math.PI/180;grp.traverse(o=>{if(o.isMesh){o.userData={id:it.id,type:'item'};pick.push(o)}});root3.add(grp);if(sel&&sel.id===it.id)selBox(grp)})}
+function selBox(o){const b=new T3.BoxHelper(o,new T3.Color(cssv('--sel')));root3.add(b)}
+function wallRun(x0,y0,x1,y1,horiz,H,mat){const ops=OPEN3.filter(o=>o.x<x1-1&&o.x+o.w>x0+1&&o.y<y1-1&&o.y+o.h>y0+1).map(o=>horiz?[Math.max(o.x,x0),Math.min(o.x+o.w,x1),o]:[Math.max(o.y,y0),Math.min(o.y+o.h,y1),o]).sort((p,q)=>p[0]-q[0]);
+  let u=horiz?x0:y0;const end=horiz?x1:y1;const seg=(u0,u1,ya,yb,m,ne)=>horiz?boxA(mm(u0),mm(y0),mm(u1),mm(y1),ya,yb,m,null,ne):boxA(mm(x0),mm(u0),mm(x1),mm(u1),ya,yb,m,null,ne);
+  for(const [a,b,o] of ops){seg(u,a,0,mm(H),mat);if(o.sill>0)seg(a,b,0,mm(o.sill),mat);seg(a,b,mm(o.top),mm(H),mat);if(!o.door){const c=(horiz?(y0+y1)/2:(x0+x1)/2);horiz?boxA(mm(a),mm(c-25),mm(b),mm(c+25),mm(o.sill),mm(o.top),mats.glass):boxA(mm(c-25),mm(a),mm(c+25),mm(b),mm(o.sill),mm(o.top),mats.glass)}u=b}
+  seg(u,end,0,mm(H),mat)}
+function gable(){// north end wall of the hall: stone to 2.45 m at the corners, 4.2 m across the middle; doors and windows cut out
+  const x0=12054,x1=21374,L=mm(x1-x0),s=mm(ROOF.shoulder),e=mm(ROOF.eave),h=mm(ROOF.mid);const sh=new T3.Shape([new T3.Vector2(0,0),new T3.Vector2(L,0),new T3.Vector2(L,e),new T3.Vector2(L-s,h),new T3.Vector2(s,h),new T3.Vector2(0,e)]);
+  const holes=[[15810,17483,0,2700,1],[13627,14428,160,2080],[18939,19740,160,2080]];
+  holes.forEach(([a,b,y0,y1])=>sh.holes.push(new T3.Path([new T3.Vector2(mm(a-x0),mm(y0)+.001),new T3.Vector2(mm(b-x0),mm(y0)+.001),new T3.Vector2(mm(b-x0),mm(y1)),new T3.Vector2(mm(a-x0),mm(y1))])));
+  const m=new T3.Mesh(new T3.ExtrudeGeometry(sh,{depth:mm(WT),bevelEnabled:false}),mats.wall);m.position.set(mm(x0),0,-mm(WT));m.castShadow=m.receiveShadow=true;edges(m);root3.add(m);
+  holes.forEach(([a,b,y0,y1,door])=>{if(!door)boxA(mm(a),-.32,mm(b),-.27,mm(y0),mm(y1),mats.glass)})}
+function glazedScreen(){const y0=9397-150,y1=9397;boxA(0,mm(y0),mm(12054),mm(y1),.05,2.9,mats.glass);boxA(0,mm(y0),mm(12054),mm(y1),2.9,3,mats.dark);boxA(0,mm(y0),mm(12054),mm(y1),0,.05,mats.dark);
+  for(let x=0;x<=12054;x+=1200)boxA(mm(x),mm(y0),mm(Math.min(x+60,12054)),mm(y1),0,2.9,mats.dark,null,true)}
+function roofs(){if(V3.roof==='off')return;const solid=V3.roof==='solid';const mR=solid?mats.roofSolid:mats.roofGlass,mF=solid?mats.flat:mats.flatGlass;
+  const x0=mm(12054),x1=mm(21374),z0=-mm(WT),z1=mm(17860+WT),xc=(x0+x1)/2,s=mm(ROOF.shoulder),e=mm(ROOF.eave),h=mm(ROOF.mid),r=mm(ROOF.ridge),hin=mm(ROOF.hipIn);
+  const P=(x,y,z)=>new T3.Vector3(x,y,z);const tris=[];const quad=(a,b,c,d)=>tris.push(a,b,c,a,c,d);
+  quad(P(x0,e,z0),P(x0,e,z1),P(x0+s,h,z1),P(x0+s,h,z0));quad(P(x0+s,h,z0),P(x0+s,h,z1),P(xc,r,z1-hin),P(xc,r,z0+hin));
+  quad(P(x1,e,z1),P(x1,e,z0),P(x1-s,h,z0),P(x1-s,h,z1));quad(P(x1-s,h,z1),P(x1-s,h,z0),P(xc,r,z0+hin),P(xc,r,z1-hin));
+  tris.push(P(x0+s,h,z0),P(xc,r,z0+hin),P(x1-s,h,z0));tris.push(P(x1-s,h,z1),P(xc,r,z1-hin),P(x0+s,h,z1));
+  // south end: close the corners down to the eaves
+  tris.push(P(x0,e,z1),P(x0+s,h,z1),P(x1-s,h,z1));tris.push(P(x0,e,z1),P(x1-s,h,z1),P(x1,e,z1));
+  const geo=new T3.BufferGeometry().setFromPoints(tris);geo.computeVertexNormals();const m=new T3.Mesh(geo,mR);m.castShadow=solid;m.receiveShadow=solid;root3.add(m);
+  if(solid)root3.add(new T3.LineSegments(new T3.EdgesGeometry(geo,20),mats.edge));
+  const flat=(r2,y)=>boxA(mm(r2.x),mm(r2.y),mm(r2.x+r2.w),mm(r2.y+r2.h),y,y+.25,mF,null,!solid);
+  ROOMS.filter(q=>q.n!=='Main hall').forEach(q=>flat(q,q.out?3.035:q.n==='East wing'?2.825:2.75))}
+function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new T3.Group();const w=mm(it.w),d=mm(it.d),h=mm(itemH(it)),a=w/2,b=d/2;
+  const tint=M('t'+c.t,()=>std(col(c.t,.5)));const tint2=M('t2'+c.t,()=>std(col(c.t,.25)));
+  const B=(x0,z0,x1,z1,y0,y1,m)=>boxA(x0,z0,x1,z1,y0,y1,m||tint,g);
+  const legs=(top)=>{const t=.05;[[-a,-b],[a-t,-b],[-a,b-t],[a-t,b-t]].forEach(([x,z])=>B(x,z,x+t,z+t,0,top-.04,mats.dark))};
+  switch(c.s){
+    case 'sofa':case 'arm':{const ar=Math.min(w*.12,.23),bk=Math.min(d*.24,.26);B(-a,-b,a,b,0,.42);B(-a,-b,a,-b+bk,.42,h,tint2);B(-a,-b,-a+ar,b,.42,.62,tint2);B(a-ar,-b,a,b,.42,.62,tint2);break}
+    case 'lsofa':{const t=Math.min(.95,d*.45,w*.4);B(-a,-b,a,-b+t,0,.42);B(-a,-b+t,-a+t,b,0,.42);B(-a,-b,a,-b+.23,.42,h,tint2);B(-a,-b,-a+.23,b,.42,h,tint2);break}
+    case 'chair':B(-a+w*.08,-b+d*.2,a-w*.08,b,0,.46);B(-a,-b,a,-b+d*.18,0,h,tint2);break;
+    case 'stool':{const m=new T3.Mesh(new T3.CylinderGeometry(Math.min(a,b)*.9,Math.min(a,b)*.6,h,20),tint);m.position.y=h/2;m.castShadow=true;g.add(m);break}
+    case 'table':case 'desk':B(-a,-b,a,b,h-.04,h,c.s==='desk'?tint2:tint);legs(h);if(c.s==='desk')B(-w*.2,-b+.05,w*.2,-b+.08,h,h+.42,mats.dark);break;
+    case 'lounger':case 'daybed':B(-a,-b,a,b,0,.32);B(-a,-b,-a+w*.24,b,.32,.62,tint2);break;
+    case 'tv':B(-a,-b,a,b,0,.5,tint2);B(-a*.9,-b,a*.9,-b+.06,.75,Math.max(.8,h),mats.dark);break;
+    case 'rug':case 'putt':case 'mat':case 'yoga':case 'c-flat':B(-a,-b,a,b,0,Math.max(.01,h),c.s==='putt'||c.s==='mat'?mats.turf:tint);break;
+    case 'counter':B(-a,-b,a,b,0,.86,tint2);B(-a,-b,a,b,.86,.9,mats.white);B(-a,-b,a,-b+.35,1.45,2.15,tint2);break;
+    case 'island':B(-a,-b,a,b,0,.86,tint2);B(-a-.02,-b-.02,a+.02,b+.02,.86,.9,mats.white);break;
+    case 'wc':B(-a,-b,a,-b+d*.27,0,h,mats.white);B(-a*.8,-b+d*.27,a*.8,b,0,.4,mats.white);break;
+    case 'basin':case 'vanity2':B(-a,-b,a,b,0,.82,tint2);B(-a,-b,a,b,.82,.86,mats.white);break;
+    case 'bath':B(-a,-b,a,b,0,h,mats.white);B(-a+.08,-b+.08,a-.08,b-.08,h-.02,h+.001,mats.water);break;
+    case 'shower':B(-a,-b,a,b,0,.04,mats.white);B(-a,-b,a,b,.04,h,mats.glass);break;
+    case 'sauna':case 'steam':B(-a,-b,a,b,0,h,c.s==='sauna'?mats.wood:mats.white);break;
+    case 'plunge':case 'tub':B(-a,-b,a,b,0,h,tint2);B(-a+.1,-b+.1,a-.1,b-.1,h,h+.005,mats.water);break;
+    case 'bed':B(-a,-b,a,b,h-.12,h,tint);legs(h-.12);break;
+    case 'golf':B(-a,-b,a,b,0,h,mats.glass);B(-a+.2,-b+.06,a-.2,-b+.1,.05,h-.1,mats.white);B(-.75,b-d*.32-.75,.75,b-d*.32+.75,0,.03,mats.turf);B(-a,-b,a,-b+.06,h-.06,h,mats.dark);break;
+    case 'golfopen':B(-a+.2,-b+.06,a-.2,-b+.1,.05,h-.1,mats.white);B(-.75,b-d*.32-.75,.75,b-d*.32+.75,0,.03,mats.turf);break;
+    case 'door':case 'door2':case 'slide':B(-a,-b,-a+.05,b,0,h,mats.dark);B(a-.05,-b,a,b,0,h,mats.dark);B(-a,-b,a,b,h-.05,h,mats.dark);break;
+    case 'stair':{const k=Math.max(2,Math.floor(w/.26));for(let i=0;i<k;i++)B(-a+w*i/k,-b,-a+w*(i+1)/k,b,0,Math.max(.02,h*(i+1)/k),mats.stair);break}
+    case 'tread':B(-a,-b,a,b,0,.2,tint2);B(a-.12,-b+.1,a,b-.1,.2,h,mats.dark);break;
+    case 'c-circle':{const m=new T3.Mesh(new T3.CylinderGeometry(.5,.5,h,32),tint);m.scale.set(w,1,d);m.position.y=h/2;m.castShadow=true;edges(m);g.add(m);break}
+    default:B(-a,-b,a,b,0,h)}
+  return g}
+function pick3D(e){const r=R3.domElement.getBoundingClientRect();const v=new T3.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);const rc=new T3.Raycaster();rc.setFromCamera(v,cam3);
+  const hit=rc.intersectObjects(pick,false)[0];if(hit){sel={type:hit.object.userData.type,id:hit.object.userData.id};span=null}else sel=null;renderInspector();V3.dirty=true}
+function camPreset(p){setWalk(false);const t=ctrl3.target;
+  if(p==='overview'){cam3.position.set(14,19,22);t.set(1,0,-1)}
+  else if(p==='top'){cam3.position.set(0.5,42,0.01);t.set(0.5,0,0)}
+  else if(p==='north'){walkTo(16714,12500,Math.PI*0);return}
+  else if(p==='south'){walkTo(16714,1500,Math.PI);return}
+  ctrl3.update()}
+function walkTo(x,y,ang){const p=new T3.Vector3(mm(x),1.6,mm(y)).add(root3.position);cam3.position.copy(p);yaw=ang;pitch=-.05;setWalk(true)}
+function setWalk(on){V3.walk=on;$('#walkBtn').setAttribute('aria-pressed',on);ctrl3.enabled=!on;
+  if(on){if(cam3.position.y>3){const tg=ctrl3.target;cam3.position.set(tg.x,1.6,tg.z+4);yaw=0;pitch=0}cam3.position.y=1.6}
+  else{const dir=new T3.Vector3(0,0,-1).applyEuler(new T3.Euler(pitch,yaw,0,'YXZ'));ctrl3.target.copy(cam3.position).add(dir.multiplyScalar(3))}
+  $('#hint').innerHTML=on?'<b>Walk:</b> drag to look around, W A S D or arrow keys to move, Shift to go faster, Esc to stop walking.':'<b>3D:</b> drag to orbit, right-drag or two fingers to pan, scroll to zoom. Click an item to select it.'}
+function queue3D(){V3.dirty=true}
+async function setView(v){const on=v==='3d';V3.on=on;stage.dataset.view=v;document.querySelectorAll('.views button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===v));
+  $('#toolSeg').style.visibility=on?'hidden':'';$('#three').hidden=!on;$('#bar3d').hidden=!on;
+  if(on){setTool('select');$('#hint').innerHTML='<b>3D:</b> drag to orbit, right-drag or two fingers to pan, scroll to zoom. Click an item to select it.';$('#load3d').hidden=V3.ready;
+    try{await ensure3D();$('#load3d').hidden=true;size3D();V3.dirty=true}catch(err){$('#load3d').textContent=err.message+' Check your connection and try again.'}}
+  else{setWalk&&V3.ready&&setWalk(false);setTool(tool);render()}}
+document.querySelectorAll('.views button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+$('#bar3d').addEventListener('click',e=>{const b=e.target.closest('[data-cam]');if(b&&V3.ready)camPreset(b.dataset.cam)});
+$('#walkBtn').addEventListener('click',()=>{if(V3.ready)setWalk(!V3.walk)});
+$('#roof3d').addEventListener('change',e=>{V3.roof=e.target.value;V3.dirty=true});
+
 /* ---------- Shared store (Vercel API) ---------- */
 const GROUPS={golf:'--z-golf',spa:'--z-spa',relax:'--z-relax',office:'--z-office',bar:'--z-bar',store:'--z-store',other:'--z-other'};
 let designs=[],catalog=[],cur=null,dirty=false,saving=false,saveTimer=null,saveErr=false,lastPullOk=0;
@@ -810,7 +995,7 @@ function curDoc(){return designs.find(d=>d.id===cur)||null}
 function ago(t){if(!t)return '';const s=(Date.now()-t)/1000;if(s<50)return 'just now';if(s<3600)return Math.round(s/60)+' min ago';if(s<86400)return Math.round(s/3600)+' h ago';return new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
 function stampText(d){return d&&d.updatedAt?`Last edited ${ago(d.updatedAt)}${d.updatedBy?' by '+d.updatedBy:''}.`:''}
 function applyCatalog(){Object.keys(CATMAP).filter(k=>k.startsWith('c:')).forEach(k=>delete CATMAP[k]);
-  catalog.forEach(c=>{CATMAP['c:'+c.id]={k:'c:'+c.id,n:c.name,w:+c.w,d:+c.d,s:c.flat?'c-flat':(c.shape||'c-rect'),t:GROUPS[c.group]||'--z-other',g:'My items',flat:!!c.flat,custom:1,note:c.note||''}})}
+  catalog.forEach(c=>{CATMAP['c:'+c.id]={k:'c:'+c.id,n:c.name,w:+c.w,d:+c.d,s:c.flat?'c-flat':(c.shape||'c-rect'),t:GROUPS[c.group]||'--z-other',g:'My items',flat:!!c.flat,custom:1,note:c.note||'',h:+c.h||900}})}
 function ensureOrphans(){S.items.forEach(it=>{if(it.k.startsWith('c:')&&!CATMAP[it.k])CATMAP[it.k]={k:it.k,n:it.cn||'Custom item',w:it.w,d:it.d,s:it.cflat?'c-flat':(it.cs||'c-rect'),t:it.ct||'--z-other',g:'My items',flat:!!it.cflat,custom:1}})}
 function setStatus(t,err){const e=$('#dstat');e.textContent=t;e.classList.toggle('err',!!err)}
 function renderDesignBar(){const d=curDoc();$('#dname').textContent=d?d.name:'No design open';if(!d)setStatus(designs.length?'pick a design':'start a design');else if(saveErr)setStatus('not saved, retrying',1);else if(dirty||saving)setStatus('saving…');else setStatus('saved · '+ago(d.updatedAt))}
@@ -872,10 +1057,10 @@ $('#designs').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.datase
 /* custom item types */
 let editingC=null;
 function openCustom(id){editingC=id;const c=id?catalog.find(x=>x.id===id):null;$('#citemTitle').textContent=c?'Edit item':'New item';
-  $('#ci-name').value=c?c.name:'';$('#ci-w').value=c?c.w:1000;$('#ci-d').value=c?c.d:1000;$('#ci-g').value=c?c.group||'other':'other';$('#ci-s').value=c?c.shape||'c-rect':'c-rect';$('#ci-flat').checked=!!(c&&c.flat);$('#ci-note').value=c?c.note||'':'';
+  $('#ci-name').value=c?c.name:'';$('#ci-w').value=c?c.w:1000;$('#ci-d').value=c?c.d:1000;$('#ci-h').value=c?(c.h||900):900;$('#ci-g').value=c?c.group||'other':'other';$('#ci-s').value=c?c.shape||'c-rect':'c-rect';$('#ci-flat').checked=!!(c&&c.flat);$('#ci-note').value=c?c.note||'':'';
   $('#ci-del').hidden=!c;$('#ci-del').textContent='Delete item type';$('#ci-msg').textContent=c?'Changing the size here affects new placements. Items already placed keep their own size.':'';$('#citem').hidden=false;closeSheets();$('#ci-name').focus()}
 $('#ci-cancel').onclick=()=>$('#citem').hidden=true;
-$('#citemForm').addEventListener('submit',async e=>{e.preventDefault();const id=editingC||uid();const c={id,name:$('#ci-name').value.trim(),w:Math.max(50,+$('#ci-w').value||0),d:Math.max(50,+$('#ci-d').value||0),group:$('#ci-g').value,shape:$('#ci-s').value,flat:$('#ci-flat').checked,note:$('#ci-note').value.trim(),updatedAt:Date.now(),updatedBy:ls.get('lbph-who')};
+$('#citemForm').addEventListener('submit',async e=>{e.preventDefault();const id=editingC||uid();const c={id,name:$('#ci-name').value.trim(),w:Math.max(50,+$('#ci-w').value||0),d:Math.max(50,+$('#ci-d').value||0),h:Math.max(10,+$('#ci-h').value||900),group:$('#ci-g').value,shape:$('#ci-s').value,flat:$('#ci-flat').checked,note:$('#ci-note').value.trim(),updatedAt:Date.now(),updatedBy:ls.get('lbph-who')};
   if(!c.name)return;$('#ci-save').disabled=true;try{await api('/api/catalog?id='+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(c)});catalog=catalog.filter(x=>x.id!==id).concat(c).sort((a,b)=>a.name.localeCompare(b.name));applyCatalog();
     S.items.forEach(it=>{if(it.k==='c:'+id){it.cn=c.name;it.cs=c.flat?'c-flat':c.shape;it.ct=GROUPS[c.group];if(!it.label)it.label=''}});renderPalette();render();renderInspector();$('#citem').hidden=true;toast(editingC?`Updated “${c.name}”.`:`Added “${c.name}” to My items.`)}
   catch(err){if(!err.auth)$('#ci-msg').textContent='Could not save: '+err.message}finally{$('#ci-save').disabled=false}});

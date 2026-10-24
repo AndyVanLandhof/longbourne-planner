@@ -8,12 +8,16 @@ Live: https://longbourne-planner.vercel.app (passcode protected)
 
 | Path | What it does |
 | --- | --- |
-| `index.html` | The whole app: the traced shell, item catalogue, drawing, measuring and design management. Plain HTML, CSS and JavaScript, no build step. |
+| `index.html` | The whole app: the traced shell, item catalogue, drawing, measuring, design management and the 3D view. Plain HTML, CSS and JavaScript, no build step. The 3D view loads three.js r128 from cdnjs the first time the 3D tab is opened. |
 | `api/data.js` | `GET` returns every saved design and every custom item. |
 | `api/designs.js` | `PUT ?id=` saves a design, `DELETE ?id=` removes one. |
 | `api/catalog.js` | Same for custom item types ("My items"). |
 | `api/_store.js` | Storage helpers on Vercel Blob. Keeps the last 20 versions of each design; deletes are soft. |
 | `api/app.js` | Legacy: served the page from Blob before this repo existed. Not used now that `index.html` is served directly. |
+
+## 3D view
+
+The 3D tab builds a model from the current design: shell walls with the approved door and window openings, the hall's clipped-gable roof (eaves 2.45 m, 4.2 m across the middle, ridge 7.23 m, read off 5702-PH-A-201/202 T2), the stair void, user walls at 2.4 m, and every item at a typical height. Each item's height can be changed in the inspector, and custom items have a height field.
 
 ## Data
 
