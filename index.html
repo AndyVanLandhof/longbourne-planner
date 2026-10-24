@@ -642,7 +642,8 @@ function renderInspector(){let h='';
         ${isZ?`<label class="full">Use<select id="f-zt" data-f="zt">${Object.entries(ZT).map(([k,v])=>`<option value="${k}"${k===(it.zt||'other')?' selected':''}>${v[0]}</option>`).join('')}</select></label>`:''}
         <label>Width (mm)<input type="number" id="f-w" data-f="w" step="10" min="50" value="${Math.round(it.w)}"></label>
         <label>Depth (mm)<input type="number" id="f-d" data-f="d" step="10" min="50" value="${Math.round(it.d)}"></label>
-        ${isZ?'':`<label>Height (mm)<input type="number" id="f-h" data-f="h" step="10" min="10" value="${Math.round(itemH(it))}"></label>`}
+        ${isZ?'':`<label>${isSunk(it)?'Depth (mm)':'Height (mm)'}<input type="number" id="f-h" data-f="h" step="10" min="10" value="${Math.round(itemH(it))}"></label>`}
+${canSink(it)?`<label class="full" style="flex-direction:row;align-items:center;gap:7px;color:var(--ink)"><input type="checkbox" id="f-sunk" data-f="sunk" style="width:auto"${isSunk(it)?' checked':''}> Sunk into the floor</label>`:''}
 <label>Rotation (°)<input type="number" id="f-rot" data-f="rot" step="15" value="${Math.round(it.rot||0)}"></label>
         <label>&nbsp;<span class="row"><button class="ib" data-act="rotl" title="Rotate left 90°">⟲ 90°</button><button class="ib" data-act="rotr" title="Rotate right 90°">⟳ 90°</button></span></label>
         <label>West edge, from grid A (mm)<input type="number" id="f-x" data-f="x" step="50" value="${Math.round(it.x-(((it.rot||0)%180)?it.d:it.w)/2)}"></label>
@@ -778,7 +779,8 @@ insp.addEventListener('change',e=>{const t=e.target;
   if(t.dataset.o){opt[t.dataset.o]=t.checked;save();render();return}
   const f=t.dataset.f;if(!f||!sel)return;const o=find(sel.id);if(!o)return;
   mutate(()=>{if(sel.type==='item'){
-      if(f==='label')o.label=t.value.trim();else if(f==='zt'){o.zt=t.value}
+      if(f==='sunk'){o.sunk=t.checked}
+else if(f==='label')o.label=t.value.trim();else if(f==='zt'){o.zt=t.value}
       else if(f==='w'||f==='d'){const v=Math.max(50,+t.value||0);const sw=((o.rot||0)%180)!==0;const L=o.x-(sw?o.d:o.w)/2,T=o.y-(sw?o.w:o.d)/2;o[f]=v;if(CATMAP[o.k]?.sq){o.w=o.d=v}o.x=L+(sw?o.d:o.w)/2;o.y=T+(sw?o.w:o.d)/2}
       else if(f==='rot'){o.rot=(((+t.value||0)%360)+360)%360}
 else if(f==='h'){o.h=Math.max(10,+t.value||0)}
@@ -829,6 +831,9 @@ function sample(){const I=(k,x,y,o={})=>{const c=CATMAP[k];return {id:nid(),k,x,
 
 /* ---------- 3D view ---------- */
 const H3={sofa:800,arm:800,lsofa:800,chair:900,stool:750,table:750,desk:750,lounger:450,daybed:450,tv:1900,rug:10,shelf:2100,rack:1000,cupboard:2200,counter:900,island:900,fridge:1800,wc:780,basin:850,vanity2:850,bath:550,shower:2000,sauna:2100,steam:2200,plunge:1000,tub:900,bed:750,golf:3100,golfopen:3100,putt:20,mat:20,door:2100,door2:2100,slide:2100,column:2450,stair:60,tread:1400,yoga:10,'c-rect':900,'c-round':900,'c-circle':900,'c-flat':10,zone:5};
+const SINKABLE=['tub','plunge','bath','c-rect','c-round','c-circle'];
+function canSink(it){return SINKABLE.includes(CATMAP[it.k]?.s)}
+function isSunk(it){if(!canSink(it))return false;return it.sunk!=null?!!it.sunk:CATMAP[it.k]?.s==='tub'}
 function itemH(it){const c=CATMAP[it.k];if(it.h)return it.h;if(c&&c.custom)return c.h||900;return H3[c?c.s:'']||900}
 // Openings in the shell (mm). sill/top in mm above floor. From 5702-PH-A-201/202 T2.
 const OPEN3=[{x:22359,y:8474,w:1601,h:576,sill:0,top:2300,door:1},{x:-576,y:10170,w:576,h:874,sill:0,top:2100,door:1},
@@ -876,9 +881,11 @@ function boxA(x0,z0,x1,z1,y0,y1,mat,parent,noEdge){const w=Math.abs(x1-x0),d=Mat
 function clear3D(){root3.traverse(o=>{if(o.geometry)o.geometry.dispose()});root3.clear()}
 function build3D(){clear3D();pick=[];
   // ground
-  const g=new T3.Mesh(new T3.PlaneGeometry(400,400),mats.ground);g.rotation.x=-Math.PI/2;g.position.set(12.7,-.02,9.8);g.receiveShadow=true;root3.add(g);
+  const holes3=[rectPts(STAIR)].concat(S.items.filter(isSunk).map(corners)).map(pts=>new T3.Path(pts.map(([x,y])=>new T3.Vector2(mm(x),-mm(y)))));
+  const gs=new T3.Shape([new T3.Vector2(-190,190),new T3.Vector2(210,190),new T3.Vector2(210,-210),new T3.Vector2(-190,-210)]);holes3.forEach(h=>gs.holes.push(h));
+  const g=new T3.Mesh(new T3.ShapeGeometry(gs),mats.ground);g.rotation.x=-Math.PI/2;g.position.y=-.02;g.receiveShadow=true;root3.add(g);
   // floor with stair void
-  const sh=new T3.Shape(POLY.map(([x,y])=>new T3.Vector2(mm(x),-mm(y))));const hole=new T3.Path(rectPts(STAIR).map(([x,y])=>new T3.Vector2(mm(x),-mm(y))));sh.holes.push(hole);
+  const sh=new T3.Shape(POLY.map(([x,y])=>new T3.Vector2(mm(x),-mm(y))));holes3.forEach(h=>sh.holes.push(h));
   const fl=new T3.Mesh(new T3.ShapeGeometry(sh),mats.floor);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;root3.add(fl);
   boxA(mm(LOGGIA.x),mm(LOGGIA.y),mm(LOGGIA.x+LOGGIA.w),mm(LOGGIA.y+LOGGIA.h),-.05,0,mats.loggia,null,true).receiveShadow=true;
   // shell walls
@@ -933,6 +940,11 @@ function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new
   const tint=M('t'+c.t,()=>std(col(c.t,.5)));const tint2=M('t2'+c.t,()=>std(col(c.t,.25)));
   const B=(x0,z0,x1,z1,y0,y1,m)=>boxA(x0,z0,x1,z1,y0,y1,m||tint,g);
   const legs=(top)=>{const t=.05;[[-a,-b],[a-t,-b],[-a,b-t],[a-t,b-t]].forEach(([x,z])=>B(x,z,x+t,z+t,0,top-.04,mats.dark))};
+  if(isSunk(it)){const t=Math.min(.12,a*.3,b*.3),dep=h;
+    B(-a,-b,a,-b+t,-dep,0,tint2);B(-a,b-t,a,b,-dep,0,tint2);B(-a,-b+t,-a+t,b-t,-dep,0,tint2);B(a-t,-b+t,a,b-t,-dep,0,tint2);B(-a,-b,a,b,-dep-.05,-dep,tint2);
+    B(-a+t,-b+t,a-t,b-t,-.17,-.15,mats.water);
+    B(-a-.1,-b-.1,a+.1,-b,0,.015,mats.white);B(-a-.1,b,a+.1,b+.1,0,.015,mats.white);B(-a-.1,-b,-a,b,0,.015,mats.white);B(a,-b,a+.1,b,0,.015,mats.white);
+    return g}
   switch(c.s){
     case 'sofa':case 'arm':{const ar=Math.min(w*.12,.23),bk=Math.min(d*.24,.26);B(-a,-b,a,b,0,.42);B(-a,-b,a,-b+bk,.42,h,tint2);B(-a,-b,-a+ar,b,.42,.62,tint2);B(a-ar,-b,a,b,.42,.62,tint2);break}
     case 'lsofa':{const t=Math.min(.95,d*.45,w*.4);B(-a,-b,a,-b+t,0,.42);B(-a,-b+t,-a+t,b,0,.42);B(-a,-b,a,-b+.23,.42,h,tint2);B(-a,-b,-a+.23,b,.42,h,tint2);break}
