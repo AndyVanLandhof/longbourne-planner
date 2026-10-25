@@ -399,11 +399,11 @@ const STRUCT={x:2996,y:12200,w:4590,h:540};
 const STAIR={x:2996,y:12740,w:4590,h:1120};
 const UPSTAND_H=1200; // half-height wall along the stairwell
 const ROOMS=[
-  {n:'Main hall',x:12630,y:0,w:8168,h:17860},
+  {n:'Hall',x:12630,y:0,w:8168,h:17860,nolabel:true,hall:true},
   {n:'East wing',x:20798,y:9050,w:4500,h:8810},
   {n:'Link',x:0,y:9397,w:12630,h:2803},
   {n:'Stair hall',x:1757,y:12200,w:6033,h:1660,nolabel:true},
-  {n:'Former changing',x:7790,y:12200,w:4840,h:5660},
+  {n:'West bay',x:7790,y:12200,w:4840,h:5660,nolabel:true},
   {n:'Alcove',x:15450,y:17860,w:2400,h:1740},
   {n:'Covered loggia (outside)',x:0,y:1483,w:12054,h:7764,out:true},
 ];
@@ -604,18 +604,19 @@ function render(){
   const outer=offsetPoly(POLY,WT);
   o+=`<path d="M${outer.map(p=>p.map(n).join(' ')).join('L')}Z" class="wallband"/>`;
   o+=`<rect x="0" y="${9397-WT}" width="12054" height="${WT-150}" fill="var(--loggia)"/><rect x="0" y="${9397-150}" width="12054" height="150" class="glass"/>`;
+  if(eastGlass())o+=`<rect x="25298" y="9050" width="${WT}" height="8810" fill="var(--sheet)"/><rect x="25298" y="9050" width="150" height="8810" class="glass"/>`;
   o+=`<rect x="${-WT}" y="${9397-WT}" width="${WT}" height="${12200-9397+2*WT}" class="house"/>`;
   o+=`<path d="M${POLY.map(p=>p.join(' ')).join('L')}Z" class="floorp"/>`;
   PIERS.forEach(p=>o+=`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" class="pier"/>`);
   o+=`<rect x="${VENT.x}" y="${VENT.y}" width="${VENT.w}" height="${VENT.h}" class="vent"/>`;
   o+=fixedStair();
-  if(opt.openings){DOORS.forEach(d=>o+=`<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" class="door"/>`);WINS.forEach(d=>o+=`<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" class="win"/>`)}
+  if(opt.openings){DOORS.forEach(d=>o+=`<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" class="door"/>`);WINS.filter(d=>!(eastGlass()&&d.x===25298)).forEach(d=>o+=`<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" class="win"/>`)}
   // labels for shell
   const fsR=10.5*px;
   if(opt.rooms){ROOMS.forEach(r=>{if(r.nolabel||r.w*view.s<70)return;const cx=r.x+r.w/2,cy=r.y+(r.out?r.h*.18:Math.min(r.h/2,r.h-1400));if(r.w*view.s<110&&!r.out)return;o+=`<text x="${n(cx)}" y="${n(cy)}" class="room" font-size="${n(fsR*1.15)}">${r.n}</text><text x="${n(cx)}" y="${n(cy+fsR*1.5)}" class="roomd" font-size="${n(fsR*.95)}">${fmtWD(r.w,r.h)}</text>`});
     o+=`<text x="${n(-WT/2)}" y="${n(10800)}" class="roomd" font-size="${n(fsR*.9)}" transform="rotate(-90 ${n(-WT/2)} 10800)">existing house</text>`;
     if(VENT.w*view.s>60)o+=`<text x="${n(VENT.x+VENT.w/2)}" y="${n(VENT.y+VENT.h/2)}" class="roomd" font-size="${n(fsR*.9)}" dominant-baseline="central">vent shaft</text>`;
-    if(opt.openings&&view.s>.045){DOORS.concat(WINS).forEach(d=>{const cx=d.x+d.w/2,cy=d.y+d.h/2;o+=`<text x="${n(cx)}" y="${n(cy)}" class="roomd" font-size="${n(fsR*.8)}" dominant-baseline="central">${d.n}</text>`})}}
+    if(opt.openings&&view.s>.045){DOORS.concat(WINS.filter(d=>!(eastGlass()&&d.x===25298))).forEach(d=>{const cx=d.x+d.w/2,cy=d.y+d.h/2;o+=`<text x="${n(cx)}" y="${n(cy)}" class="roomd" font-size="${n(fsR*.8)}" dominant-baseline="central">${d.n}</text>`})}}
   // drawing reference grid
   if(opt.refGrid){const r=Math.max(9*px,240),ext=1500;let g='';
     for(const [k,x] of Object.entries(GX)){g+=`M${x} ${-ext}V${GY[8]+ext}`;o+=`<circle cx="${x}" cy="${-ext-r}" r="${n(r)}" class="refb"/><text x="${x}" y="${n(-ext-r)}" class="reft" font-size="${n(r*1.05)}">${k}</text>`}
@@ -727,6 +728,7 @@ ${canSink(it)?`<label class="full" style="flex-direction:row;align-items:center;
     <label class="full">Shell walls, inside<select data-fin="wallsIn" id="d-fin-in">${finOptions(dFin('wallsIn'),false)}</select></label>
     <label class="full">Shell walls, outside<select data-fin="wallsOut" id="d-fin-out">${finOptions(dFin('wallsOut'),false)}</select></label>
     <label class="full">Walls you draw<select data-fin="walls" id="d-fin-walls">${finOptions(dFin('walls'),false)}</select></label></div>
+    <div class="checks"><label><input type="checkbox" id="d-eastglass" data-shell="eastGlass"${eastGlass()?' checked':''}> Relax room east wall fully glazed</label></div>
     <div class="row"><button class="ib" data-act="finishes">Manage finishes…</button></div>
     <div class="row"><button class="ib" data-act="designs">All designs</button><button class="ib" data-act="copydesign">Save a copy as new option</button></div>
     <div class="row"><button class="ib" data-act="sample">Load sample into this design</button><button class="ib danger" data-act="clearall">Clear this design</button></div>
@@ -827,6 +829,7 @@ document.addEventListener('keyup',e=>{altDown=e.altKey;shiftDown=e.shiftKey;if(V
 
 /* ---------- Inspector events ---------- */
 insp.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.shell){const d=curDoc();if(!d)return;d.shell={...(d.shell||{}),[t.dataset.shell]:t.checked};scheduleSave();render();V3.dirty=true;return}
   if(t.dataset.fin){const d=curDoc();if(!d)return;d.finishes={...(d.finishes||{}),[t.dataset.fin]:t.value};scheduleSave();V3.dirty=true;return}
   if(t.dataset.dn){const d=curDoc();if(!d)return;const v=t.value.trim();if(t.dataset.dn==='name'&&!v){t.value=d.name;return}d[t.dataset.dn]=v;scheduleSave();renderDesignBar();return}
   if(t.dataset.o){opt[t.dataset.o]=t.checked;save();render();return}
@@ -914,6 +917,7 @@ function finThumb(id){const f=finById(id);if(!f)return '';if(f.builtin){if(!texC
 function finOptions(sel,withDefault,defLabel){const opts=[withDefault?`<option value="">${esc(defLabel||'Default')}</option>`:`<option value="">Plain</option>`];
   if(textures.length)opts.push(`<optgroup label="Your finishes">`+textures.map(t=>`<option value="t:${t.id}"${sel==='t:'+t.id?' selected':''}>${esc(t.name)}</option>`).join('')+`</optgroup>`);
   opts.push(`<optgroup label="Built in">`+BUILTIN.map(b=>`<option value="${b.id}"${sel===b.id?' selected':''}>${esc(b.name)}</option>`).join('')+`</optgroup>`);return opts.join('')}
+function eastGlass(){const d=curDoc();return !(d&&d.shell&&d.shell.eastGlass===false)}
 function dFin(k){const d=curDoc();return (d&&d.finishes&&d.finishes[k])||''}
 // 3D material for a finish id (null = use the default material)
 function finMat(id){const f=finById(id);if(!f||!window.THREE)return null;const key='fin:'+id+':'+(f.tile||1);if(mats[key])return mats[key];
@@ -1008,6 +1012,7 @@ function build3D(){clear3D();pick=[];
     const horiz=a[1]===b[1];
     if(horiz&&a[1]===0&&Math.min(a[0],b[0])===12630){gable();continue}               // hall north end: clipped gable
     if(horiz&&a[1]===9397&&Math.max(a[0],b[0])===12630){glazedScreen();continue}       // link to loggia: glazed screen
+    if(!horiz&&a[0]===25298&&eastGlass()){eastScreen();continue}                        // relax room east elevation: glazed screen
     const isHouse=!horiz&&a[0]===0;const hallSide=!horiz&&(a[0]===12630||a[0]===20798)&&Math.max(a[1],b[1])<=9397;
     const wingOuter=(!horiz&&a[0]===25298)||(horiz&&a[1]===9050&&Math.min(a[0],b[0])>=20798);
     const H=hallSide?ROOF.eave:wingOuter?3075:3000;wallRun(x0,y0,x1,y1,horiz,H,isHouse?mats.house:wallMats(norm(a,b)))}
@@ -1077,6 +1082,8 @@ function gable(){// north end wall of the hall: stone to 2.45 m at the corners, 
   const gOut=finMat(dFin('wallsOut')),gIn=finMat(dFin('wallsIn'));const m=new T3.Mesh(new T3.ExtrudeGeometry(sh,{depth:mm(WT),bevelEnabled:false}),gOut||mats.wall);m.position.set(mm(x0),0,-mm(WT));m.castShadow=m.receiveShadow=true;if(!gOut)edges(m);root3.add(m);
   if(gIn){const lin=new T3.Mesh(new T3.ShapeGeometry(sh),gIn);lin.position.set(mm(x0),0,.002);lin.receiveShadow=true;root3.add(lin)}
   holes.forEach(([a,b,y0,y1])=>{boxA(mm(a),-.31,mm(b),-.28,mm(y0),mm(y1),mats.glass);crittall(null,mm(a),-.295,mm(b),-.295,mm(y0),mm(y1),2,4)});northScreen(-.29)}
+function eastScreen(){const x0=25298,x1=25448,y0=9050,y1=17860;boxA(mm(x0),mm(y0),mm(x1),mm(y1),.05,2.9,mats.glass);boxA(mm(x0),mm(y0),mm(x1),mm(y1),2.9,3.075,mats.dark);boxA(mm(x0),mm(y0),mm(x1),mm(y1),0,.05,mats.dark);
+  const n=Math.round((y1-y0)/1200);for(let i=0;i<=n;i++){const y=y0+(y1-y0)*i/n;boxA(mm(x0),mm(Math.max(y0,y-30)),mm(x1),mm(Math.min(y1,y+30)),0,2.9,mats.dark,null,true)}}
 function glazedScreen(){const y0=9397-150,y1=9397;boxA(0,mm(y0),mm(12054),mm(y1),.05,2.9,mats.glass);boxA(0,mm(y0),mm(12054),mm(y1),2.9,3,mats.dark);boxA(0,mm(y0),mm(12054),mm(y1),0,.05,mats.dark);
   for(let x=0;x<=12054;x+=1200)boxA(mm(x),mm(y0),mm(Math.min(x+60,12054)),mm(y1),0,2.9,mats.dark,null,true)}
 function roofs(){if(V3.roof==='off')return;const solid=V3.roof==='solid';const mR=solid?mats.roofSolid:mats.roofGlass,mF=solid?mats.flat:mats.flatGlass;
@@ -1090,7 +1097,7 @@ function roofs(){if(V3.roof==='off')return;const solid=V3.roof==='solid';const m
   const geo=new T3.BufferGeometry().setFromPoints(tris);geo.computeVertexNormals();const m=new T3.Mesh(geo,mR);m.castShadow=solid;m.receiveShadow=solid;root3.add(m);
   if(solid)root3.add(new T3.LineSegments(new T3.EdgesGeometry(geo,20),mats.edge));
   const flat=(r2,y)=>boxA(mm(r2.x),mm(r2.y),mm(r2.x+r2.w),mm(r2.y+r2.h),y,y+.25,mF,null,!solid);
-  ROOMS.filter(q=>q.n!=='Main hall').forEach(q=>flat(q,q.out?3.035:q.n==='East wing'?2.825:2.75))}
+  ROOMS.filter(q=>!q.hall).forEach(q=>flat(q,q.out?3.035:q.n==='East wing'?2.825:2.75))}
 function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new T3.Group();const w=mm(it.w),d=mm(it.d),h=mm(itemH(it)),a=w/2,b=d/2;
   const tint=M('t'+c.t,()=>std(col(c.t,.5)));const tint2=M('t2'+c.t,()=>std(col(c.t,.25)));
   const B=(x0,z0,x1,z1,y0,y1,m)=>boxA(x0,z0,x1,z1,y0,y1,m||tint,g);
