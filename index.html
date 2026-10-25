@@ -330,7 +330,7 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
       <label>Depth (mm)<input type="number" id="ci-d" required min="50" step="10" value="1000"></label>
       <label>Height (mm)<input type="number" id="ci-h" min="10" step="10" value="900"></label>
 <label>Type<select id="ci-g"><option value="golf">Golf</option><option value="spa">Spa</option><option value="relax">Relax</option><option value="office">Office</option><option value="bar">Kitchen & bar</option><option value="store">Storage</option><option value="other" selected>Other</option></select></label>
-      <label>Shape<select id="ci-s"><option value="c-rect">Rectangle</option><option value="c-round">Rounded</option><option value="c-circle">Round / oval</option></select></label>
+      <label>Shape<select id="ci-s"><option value="c-rect">Rectangle</option><option value="c-round">Rounded</option><option value="c-circle">Round / oval</option><option value="buddha">Statue on a plinth</option><option value="person">Person figure</option></select></label>
       <label class="full" style="flex-direction:row;align-items:center;gap:7px;color:var(--ink)"><input type="checkbox" id="ci-flat" style="width:auto"> Floor finish, like a rug or mat (ignored when measuring space)</label>
       <label class="full">Note or link (optional)<input type="text" id="ci-note" maxlength="300" placeholder="Supplier, model, URL"></label>
     </div>
@@ -435,11 +435,13 @@ const CAT=[
   ['side','Side table',500,500,'table'],['rug','Rug',3000,2000,'rug',{flat:1}],['tv','TV / media wall',2000,400,'tv']]},
  {g:'Office',t:'--z-office',items:[
   ['desk','Desk',1600,800,'desk'],['dchair','Desk chair',650,650,'chair'],['meet','Meeting table, 6',2000,1000,'table'],
-  ['chair','Chair',500,500,'chair'],['books','Bookcase',1000,350,'shelf']]},
+  ['chair','Chair',500,500,'chair'],['books','Bookcase',1000,350,'shelf'],['library','Library wall',3000,350,'shelf',{h:2700}]]},
  {g:'Kitchen & bar',t:'--z-bar',items:[
   ['kitchen','Kitchenette run',3000,600,'counter'],['island','Island',2400,1000,'island'],['fridge','Fridge',600,650,'fridge'],
   ['wine','Wine fridge',600,600,'fridge'],['stool','Bar stool',450,450,'stool'],['dining','Dining table, 6',1800,900,'table']]},
- {g:'Fitness',t:'--z-other',items:[
+ {g:'People',t:'--z-other',items:[
+['man','Person, 1.80 m',500,300,'person',{h:1800}],['woman','Person, 1.65 m',460,280,'person',{h:1650}],['child','Child, 1.20 m',360,220,'person',{h:1200}]]},
+{g:'Fitness',t:'--z-other',items:[
   ['tread','Treadmill',2000,900,'tread'],['yoga','Yoga mat',1830,610,'yoga',{flat:1}]]},
 ];
 const CATMAP={};CAT.forEach(g=>g.items.forEach(([k,n,w,d,s,x])=>CATMAP[k]={k,n,w,d,s,t:g.t,g:g.g,...(x||{})}));
@@ -530,7 +532,7 @@ function sym(s,w,d){const a=w/2,b=d/2;let o='';
   case 'daybed':return R(-a,-b,w,d,'b',90)+R(-a,-b,w,d*.2,'b2',80);
   case 'tv':return R(-a,-b,w,d,'b2')+R(-a+w*.05,b-Math.min(60,d*.3),w*.9,Math.min(60,d*.3),'f');
   case 'rug':return R(-a,-b,w,d,'rug')+R(-a+120,-b+120,w-240,d-240,'rug');
-  case 'shelf':case 'rack':{o=R(-a,-b,w,d);const k=Math.max(1,Math.round(w/400));for(let i=1;i<k;i++){const x=-a+w*i/k;o+=Ln(x,-b,x,b)}if(s==='rack')for(let i=0;i<k;i++)o+=Ci(-a+w*(i+.5)/k,0,Math.min(d*.25,w/k*.3));return o}
+  case 'shelf':case 'rack':{o=R(-a,-b,w,d)+(s==='shelf'?R(-a,b-Math.min(50,d*.18),w,Math.min(50,d*.18),'f'):'');const k=Math.max(1,Math.round(w/400));for(let i=1;i<k;i++){const x=-a+w*i/k;o+=Ln(x,-b,x,b)}if(s==='rack')for(let i=0;i<k;i++)o+=Ci(-a+w*(i+.5)/k,0,Math.min(d*.25,w/k*.3));return o}
   case 'cupboard':return R(-a,-b,w,d)+Ln(-a,-b,a,b);
   case 'counter':{o=R(-a,-b,w,d,'b',10);const sw=Math.min(800,w*.3);o+=R(a-sw-120,-b+90,sw,d-180,'w',40);const hr=Math.min(d*.14,90);for(const [x,y] of [[-.32,-.22],[-.18,-.22],[-.32,.22],[-.18,.22]])o+=Ci(x*w-a*0+(-a+w*0.5)*0,y*d,hr);return o}
   case 'island':return R(-a,-b,w,d,'b',30)+R(-a+80,-b+80,w-160,d-160,'l',20);
@@ -556,6 +558,8 @@ function sym(s,w,d){const a=w/2,b=d/2;let o='';
   case 'stair':{o=R(-a,-b,w,d);const k=Math.max(2,Math.floor(w/260));for(let i=1;i<k;i++){const x=-a+w*i/k;o+=Ln(x,-b,x,b)}o+=Ln(a-150,0,-a+200,0)+`<path class="l" d="M${-a+420} ${-140}L${-a+200} 0L${-a+420} 140"/>`;return o}
   case 'tread':return R(-a,-b,w,d,'b',40)+R(-a+w*.2,-b+d*.18,w*.72,d*.64,'b2',30)+R(-a+40,-b+d*.25,w*.12,d*.5,'f',20);
   case 'yoga':return R(-a,-b,w,d,'b2',60);
+  case 'buddha':return R(-a,-b,w,d,'b2',20)+El(0,b*.18,a*.78,b*.58,'b')+El(0,-b*.05,a*.42,b*.36,'b')+Ci(0,-b*.12,Math.min(a,b)*.24,'b2');
+  case 'person':return El(0,0,a,b*.9,'b')+Ci(0,0,Math.min(a,b)*.6,'b2')+Ln(0,b*.35,0,b*1.05);
   case 'c-rect':return R(-a,-b,w,d,'b',10)+R(-a+Math.min(60,w*.08),-b+Math.min(60,d*.08),w-2*Math.min(60,w*.08),d-2*Math.min(60,d*.08),'tl',6);
   case 'c-round':return R(-a,-b,w,d,'b',Math.min(w,d)*.25);
   case 'c-circle':return El(0,0,a,b,'b')+El(0,0,a*.7,b*.7,'tl');
@@ -939,11 +943,11 @@ $('#finMine').addEventListener('click',async e=>{const b=e.target.closest('[data
   try{await api('/api/textures?id='+encodeURIComponent(b.dataset.tdel),{method:'DELETE'});textures=textures.filter(x=>x.id!==b.dataset.tdel);Object.keys(mats).filter(k=>k.startsWith('fin:t:'+b.dataset.tdel)).forEach(k=>delete mats[k]);renderFinishes();renderInspector();V3.dirty=true}catch(err){if(!err.auth)toast('Could not delete: '+err.message)}});
 
 /* ---------- 3D view ---------- */
-const H3={sofa:800,arm:800,lsofa:800,chair:900,stool:750,table:750,desk:750,lounger:450,daybed:450,tv:1900,rug:10,shelf:2100,rack:1000,cupboard:2200,counter:900,island:900,fridge:1800,wc:780,basin:850,vanity2:850,bath:550,shower:2000,sauna:2100,steam:2200,plunge:1000,tub:900,bed:750,golf:3100,golfopen:3100,putt:20,mat:20,door:2100,door2:2100,slide:2100,column:2450,stair:60,tread:1400,yoga:10,'c-rect':900,'c-round':900,'c-circle':900,'c-flat':10,zone:5};
+const H3={sofa:800,arm:800,lsofa:800,chair:900,stool:750,table:750,desk:750,lounger:450,daybed:450,tv:1900,rug:10,shelf:2100,rack:1000,cupboard:2200,counter:900,island:900,fridge:1800,wc:780,basin:850,vanity2:850,bath:550,shower:2000,sauna:2100,steam:2200,plunge:1000,tub:900,bed:750,golf:3100,golfopen:3100,putt:20,mat:20,door:2100,door2:2100,slide:2100,column:2450,stair:60,tread:1400,yoga:10,'c-rect':900,'c-round':900,'c-circle':900,'c-flat':10,zone:5,buddha:1700,person:1750};
 const SINKABLE=['tub','plunge','bath','c-rect','c-round','c-circle'];
 function canSink(it){return SINKABLE.includes(CATMAP[it.k]?.s)}
 function isSunk(it){if(!canSink(it))return false;return it.sunk!=null?!!it.sunk:CATMAP[it.k]?.s==='tub'}
-function itemH(it){const c=CATMAP[it.k];if(it.h)return it.h;if(c&&c.custom)return c.h||900;return H3[c?c.s:'']||900}
+function itemH(it){const c=CATMAP[it.k];if(it.h)return it.h;if(c&&!c.custom&&c.h)return c.h;if(c&&c.custom)return c.h||900;return H3[c?c.s:'']||900}
 // Openings in the shell (mm). sill/top in mm above floor. From 5702-PH-A-201/202 T2.
 const OPEN3=[{x:22359,y:8474,w:1601,h:576,sill:0,top:2300,door:1},{x:-576,y:10170,w:576,h:874,sill:0,top:2100,door:1},
  {x:12054,y:1803,w:576,h:1091,sill:200,top:2050},{x:20798,y:4204,w:576,h:2038,sill:230,top:2040},{x:25298,y:10171,w:576,h:1819,sill:180,top:2000},{x:25298,y:15555,w:576,h:800,sill:970,top:1600}];
@@ -1123,10 +1127,47 @@ function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new
       else if(c.s==='door2'){const lw=a-f;B(-a+f,yl-lw,-a+f+lt,yl,.01,h-f,wood);B(a-f-lt,yl-lw,a-f,yl,.01,h-f,wood)}
       else B(-a+f,-.02,a*.15,.02,.01,h-f,mats.glass);break}
     case 'stair':{const k=Math.max(2,Math.floor(w/.26));for(let i=0;i<k;i++)B(-a+w*i/k,-b,-a+w*(i+1)/k,b,0,Math.max(.02,h*(i+1)/k),mats.stair);break}
+    case 'shelf':{const wd=M('bcwood',()=>std('#6e4f34',{r:.7})),t=.025,base=.08;B(-a,-b,-a+t,b,0,h,wd);B(a-t,-b,a,b,0,h,wd);B(-a,-b,a,b,h-t,h,wd);B(-a+t,-b,a-t,b,0,base,wd);B(-a+t,-b,a-t,-b+.012,base,h-t,wd);
+      const iw=w-2*t,ih=h-base-t,rows=Math.max(1,Math.round(ih/.36));for(let i=1;i<rows;i++){const y=base+ih*i/rows;B(-a+t,-b+.012,a-t,b,y-.01,y+.01,wd)}
+      const bm=M('books3d',()=>new T3.MeshStandardMaterial({map:booksTexture(),roughness:.85}));const pg=new T3.PlaneGeometry(iw,ih);const uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*iw,uv.getY(i)*rows);
+      const bp=new T3.Mesh(pg,bm);bp.position.set(0,base+ih/2,Math.min(b-.03,-b+.24));bp.receiveShadow=true;g.add(bp);
+      const blk=M('bookblock',()=>std('#3a2b20'));B(-a+t,-b+.012,a-t,Math.min(b-.03,-b+.24)-.002,base,h-t,blk);break}
+    case 'person':{const k=h/1.75,fm=M('figure',()=>std('#d8d4cc',{r:.75}));const cyl=(r1,r2,len,x,y,z,rx=0,rz=0)=>{const m=new T3.Mesh(new T3.CylinderGeometry(r1,r2,len,14),fm);m.position.set(x,y,z);m.rotation.set(rx,0,rz);m.castShadow=true;g.add(m)};
+      const sph=(r,x,y,z,sx=1,sy=1,sz=1)=>{const m=new T3.Mesh(new T3.SphereGeometry(r,18,14),fm);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;g.add(m)};
+      [-1,1].forEach(sd=>{cyl(.068*k,.048*k,.84*k,sd*.09*k,.42*k,0);B(sd*.09*k-.05*k,-.02*k,sd*.09*k+.05*k,.13*k,0,.06*k,fm)});
+      cyl(.17*k,.135*k,.56*k,0,1.1*k,0);sph(.17*k,0,1.36*k,0,1.05,.5,.62);cyl(.05*k,.055*k,.12*k,0,1.47*k,0);sph(.112*k,0,1.615*k,.005*k,.9,1.12,1);
+      [-1,1].forEach(sd=>cyl(.045*k,.038*k,.64*k,sd*.215*k,1.07*k,0,0,sd*.06));break}
+    case 'buddha':{const st=M('plinth',()=>std('#c8c2b4',{r:.9})),br=M('bronze',()=>new T3.MeshStandardMaterial({color:'#86683c',roughness:.42,metalness:.55}));
+      const ph=Math.min(.7,h*.36),fh=h-ph;B(-a,-b,a,b,0,ph-.04,st);B(-a-.02,-b-.02,a+.02,b+.02,ph-.04,ph,st);const bw=Math.min(w*.92,d*1.35);
+      const blob=(sx,sy,sz,y,z)=>{const m=new T3.Mesh(new T3.SphereGeometry(.5,28,20),br);m.scale.set(sx,sy,sz);m.position.set(0,y,z);m.castShadow=true;g.add(m)};
+      const E=(sx,sy,sz,x,y,z,rz=0)=>{const m=new T3.Mesh(new T3.SphereGeometry(.5,28,20),br);m.scale.set(sx,sy,sz);m.position.set(x,y,z);m.rotation.z=rz;m.castShadow=true;g.add(m)};
+      const y0=ph,dz=Math.min(d*.9,bw*.75);
+      E(bw,fh*.17,dz,0,y0+fh*.085,dz*.04);                                   // crossed legs, lotus seat
+      {const m=new T3.Mesh(new T3.CylinderGeometry(bw*.23,bw*.19,fh*.42,24),br);m.scale.z=.72;m.position.set(0,y0+fh*.38,-dz*.06);m.castShadow=true;g.add(m)} // torso
+      E(bw*.58,fh*.13,dz*.42,0,y0+fh*.58,-dz*.06);                           // shoulders
+      [-1,1].forEach(sd=>E(bw*.11,fh*.38,dz*.22,sd*bw*.26,y0+fh*.4,-dz*.02,sd*.12)); // arms
+      E(bw*.34,fh*.06,dz*.26,0,y0+fh*.21,dz*.16);                            // hands resting in the lap
+      {const m=new T3.Mesh(new T3.CylinderGeometry(fh*.045,fh*.055,fh*.07,16),br);m.position.set(0,y0+fh*.66,-dz*.06);g.add(m)} // neck
+      E(fh*.19,fh*.24,fh*.2,0,y0+fh*.79,-dz*.05);                            // head
+      E(fh*.09,fh*.07,fh*.09,0,y0+fh*.925,-dz*.05);                          // topknot
+      [-1,1].forEach(sd=>E(fh*.025,fh*.1,fh*.045,sd*fh*.095,y0+fh*.765,-dz*.06)); // long ears
+      break}
     case 'tread':B(-a,-b,a,b,0,.2,tint2);B(a-.12,-b+.1,a,b-.1,.2,h,mats.dark);break;
     case 'c-circle':{const m=new T3.Mesh(new T3.CylinderGeometry(.5,.5,h,32),tint);m.scale.set(w,1,d);m.position.y=h/2;m.castShadow=true;edges(m);g.add(m);break}
     default:B(-a,-b,a,b,0,h)}
   return g}
+function booksTexture(){if(texCache.books3d)return texCache.books3d;const c=document.createElement('canvas');c.width=1024;c.height=360;const x=c.getContext('2d'),r=rnd(77);
+  const pal=['#6b2b25','#2f4a3a','#1f3550','#8a6a3a','#3d2b45','#b58b4c','#5a3a28','#7e8a7a','#2a2a2a','#a34a2e','#d9c9a8','#45607a','#6f4b2f','#8c2f39','#3b5b4a'];
+  x.fillStyle='#2b2018';x.fillRect(0,0,1024,360);const floor=352;let p=0;
+  const book=(bx,bw,bh,col)=>{const g=x.createLinearGradient(bx,0,bx+bw,0);g.addColorStop(0,shade(col,-35));g.addColorStop(.45,shade(col,18));g.addColorStop(1,shade(col,-40));x.fillStyle=g;x.fillRect(bx,floor-bh,bw,bh);
+    x.fillStyle='rgba(212,175,95,.75)';if(r()<.7){x.fillRect(bx+2,floor-bh+10,bw-4,2);x.fillRect(bx+2,floor-14,bw-4,2)}if(r()<.6){x.fillStyle='rgba(240,230,205,.55)';x.fillRect(bx+bw*.3,floor-bh*.72,bw*.4,bh*.32)}
+    x.fillStyle='rgba(0,0,0,.35)';x.fillRect(bx+bw-1,floor-bh,1,bh)};
+  while(p<1024){const t=r();
+    if(t<.06){p+=18+r()*40;continue}
+    if(t<.13){const sw=130+r()*80;let y=floor;for(let k=0,n=3+Math.floor(r()*4);k<n;k++){const bh=12+r()*10,col=pal[Math.floor(r()*pal.length)],ww=sw-r()*30;x.fillStyle=shade(col,(r()-.5)*20);x.fillRect(p+(sw-ww)/2,y-bh,ww,bh);x.fillStyle='rgba(0,0,0,.3)';x.fillRect(p+(sw-ww)/2,y-1,ww,1);y-=bh}p+=sw+6;continue}
+    const run=4+Math.floor(r()*9),hBase=190+r()*110,col0=pal[Math.floor(r()*pal.length)];
+    for(let k=0;k<run&&p<1024;k++){const bw=16+r()*30,bh=Math.min(330,hBase+(r()-.5)*60),col=r()<.35?col0:pal[Math.floor(r()*pal.length)];book(p,bw,bh,col);p+=bw+(r()<.1?1:0)}}
+  const tex=new T3.CanvasTexture(c);tex.wrapS=tex.wrapT=T3.RepeatWrapping;tex.encoding=T3.sRGBEncoding;tex.anisotropy=8;texCache.books3d=tex;return tex}
 function pick3D(e){const r=R3.domElement.getBoundingClientRect();const v=new T3.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);const rc=new T3.Raycaster();rc.setFromCamera(v,cam3);
   const hit=rc.intersectObjects(pick,false)[0];if(hit){sel={type:hit.object.userData.type,id:hit.object.userData.id};span=null}else sel=null;renderInspector();V3.dirty=true}
 function camPreset(p){setWalk(false);const t=ctrl3.target;
