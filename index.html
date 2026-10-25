@@ -439,7 +439,11 @@ const CAT=[
  {g:'Kitchen & bar',t:'--z-bar',items:[
   ['kitchen','Kitchenette run',3000,600,'counter'],['island','Island',2400,1000,'island'],['fridge','Fridge',600,650,'fridge'],
   ['wine','Wine fridge',600,600,'fridge'],['stool','Bar stool',450,450,'stool'],['dining','Dining table, 6',1800,900,'table']]},
- {g:'People',t:'--z-other',items:[
+ {g:'Plants & art',t:'--z-golf',items:[
+['plant','House plant',500,500,'plant',{h:800}],['fig','Fiddle-leaf fig',650,650,'fig',{h:1800}],['olive','Olive tree',900,900,'fig',{h:2100}],
+['palmsm','Small palm',700,700,'palm',{h:1300}],['palm','Kentia palm',1100,1100,'palm',{h:2200}],
+['art','Picture, landscape',1200,40,'picture',{h:800,flat:1}],['artp','Picture, portrait',700,40,'picture',{h:1000,flat:1}],['artl','Large canvas',1800,50,'picture',{h:1200,flat:1}]]},
+{g:'People',t:'--z-other',items:[
 ['man','Person, 1.80 m',500,300,'person',{h:1800}],['woman','Person, 1.65 m',460,280,'person',{h:1650}],['child','Child, 1.20 m',360,220,'person',{h:1200}]]},
 {g:'Fitness',t:'--z-other',items:[
   ['tread','Treadmill',2000,900,'tread'],['yoga','Yoga mat',1830,610,'yoga',{flat:1}]]},
@@ -558,6 +562,9 @@ function sym(s,w,d){const a=w/2,b=d/2;let o='';
   case 'stair':{o=R(-a,-b,w,d);const k=Math.max(2,Math.floor(w/260));for(let i=1;i<k;i++){const x=-a+w*i/k;o+=Ln(x,-b,x,b)}o+=Ln(a-150,0,-a+200,0)+`<path class="l" d="M${-a+420} ${-140}L${-a+200} 0L${-a+420} 140"/>`;return o}
   case 'tread':return R(-a,-b,w,d,'b',40)+R(-a+w*.2,-b+d*.18,w*.72,d*.64,'b2',30)+R(-a+40,-b+d*.25,w*.12,d*.5,'f',20);
   case 'yoga':return R(-a,-b,w,d,'b2',60);
+  case 'plant':case 'fig':{const r=Math.min(a,b);o=Ci(0,0,r*.42,'b2');for(let i=0;i<9;i++){const t=i/9*6.283;o+=Ci(Math.cos(t)*r*.62,Math.sin(t)*r*.62,r*.34,'b')}return o+Ci(0,0,r*.3,'b2')}
+  case 'palm':{const r=Math.min(a,b);o=Ci(0,0,r*.24,'b2');for(let i=0;i<10;i++){const t=i/10*6.283,x=Math.cos(t)*r*.95,y=Math.sin(t)*r*.95;o+=Ln(0,0,x,y)+El(x*.62,y*.62,r*.2,r*.07,'b').replace('/>',` transform="rotate(${n(t*57.3)} ${n(x*.62)} ${n(y*.62)})"/>`)}return o}
+  case 'picture':return R(-a,-b,w,d,'b2')+R(-a,b-Math.min(14,d*.4),w,Math.min(14,d*.4),'f');
   case 'buddha':return R(-a,-b,w,d,'b2',20)+El(0,b*.18,a*.78,b*.58,'b')+El(0,-b*.05,a*.42,b*.36,'b')+Ci(0,-b*.12,Math.min(a,b)*.24,'b2');
   case 'person':return El(0,0,a,b*.9,'b')+Ci(0,0,Math.min(a,b)*.6,'b2')+Ln(0,b*.35,0,b*1.05);
   case 'c-rect':return R(-a,-b,w,d,'b',10)+R(-a+Math.min(60,w*.08),-b+Math.min(60,d*.08),w-2*Math.min(60,w*.08),d-2*Math.min(60,d*.08),'tl',6);
@@ -692,6 +699,8 @@ function renderInspector(){let h='';
 ${canSink(it)?`<label class="full" style="flex-direction:row;align-items:center;gap:7px;color:var(--ink)"><input type="checkbox" id="f-sunk" data-f="sunk" style="width:auto"${isSunk(it)?' checked':''}> Sunk into the floor</label>`:''}
 <label>Rotation (°)<input type="number" id="f-rot" data-f="rot" step="15" value="${Math.round(it.rot||0)}"></label>
         <label>&nbsp;<span class="row"><button class="ib" data-act="rotl" title="Rotate left 90°">⟲ 90°</button><button class="ib" data-act="rotr" title="Rotate right 90°">⟳ 90°</button></span></label>
+        ${c.s==='picture'?`<label class="full">Artwork<select id="f-art" data-f="art">${ART_NAMES.map((nm,i)=>`<option value="${i}"${artOf(it)===i?' selected':''}>${nm}</option>`).join('')}</select></label>
+        <label class="full">Hung at, centre height (mm)<input type="number" id="f-mount" data-f="mount" step="50" min="300" value="${Math.round(it.mount||1550)}"></label>`:''}
         <label>West edge, from grid A (mm)<input type="number" id="f-x" data-f="x" step="50" value="${Math.round(it.x-(((it.rot||0)%180)?it.d:it.w)/2)}"></label>
         <label>North edge, from grid 1 (mm)<input type="number" id="f-y" data-f="y" step="50" value="${Math.round(it.y-(((it.rot||0)%180)?it.w:it.d)/2)}"></label>
       </div>
@@ -835,7 +844,9 @@ insp.addEventListener('change',e=>{const t=e.target;
   if(t.dataset.o){opt[t.dataset.o]=t.checked;save();render();return}
   const f=t.dataset.f;if(!f||!sel)return;const o=find(sel.id);if(!o)return;
   mutate(()=>{if(sel.type==='item'){
-      if(f==='sunk'){o.sunk=t.checked}
+      if(f==='art'){o.art=+t.value}
+else if(f==='mount'){o.mount=Math.max(300,+t.value||1550)}
+else if(f==='sunk'){o.sunk=t.checked}
 else if(f==='zfloor'){if(t.value)o.floor=t.value;else delete o.floor}
 else if(f==='wfin'){if(t.value)o.finish=t.value;else delete o.finish}
 else if(f==='label')o.label=t.value.trim();else if(f==='zt'){o.zt=t.value}
@@ -1139,6 +1150,20 @@ function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new
       const bm=M('books3d',()=>new T3.MeshStandardMaterial({map:booksTexture(),roughness:.85}));const pg=new T3.PlaneGeometry(iw,ih);const uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*iw,uv.getY(i)*rows);
       const bp=new T3.Mesh(pg,bm);bp.position.set(0,base+ih/2,Math.min(b-.03,-b+.24));bp.receiveShadow=true;g.add(bp);
       const blk=M('bookblock',()=>std('#3a2b20'));B(-a+t,-b+.012,a-t,Math.min(b-.03,-b+.24)-.002,base,h-t,blk);break}
+    case 'picture':{const ch=h,mount=mm(it.mount||1550),y0=Math.max(.2,mount-ch/2),fr=M('frame',()=>std('#2b2622',{r:.5})),bz=Math.min(.03,d);
+      B(-a,-b,a,-b+bz,y0,y0+ch,fr);const m=new T3.Mesh(new T3.PlaneGeometry(Math.max(.05,w-.08),Math.max(.05,ch-.08)),M('art'+artOf(it),()=>new T3.MeshStandardMaterial({map:artTexture(artOf(it)),roughness:.75})));m.position.set(0,y0+ch/2,-b+bz+.002);g.add(m);break}
+    case 'plant':case 'fig':case 'palm':{const r0=rnd(hashId(it.id)),rr=Math.min(a,b),dark=hashId(it.id)%2===0;const pot=M(dark?'potd':'pott',()=>std(dark?'#3b3e42':'#b8643f',{r:.8}));
+      const ph=c.s==='plant'?Math.min(.38,h*.42):Math.min(.5,h*.24),pr=c.s==='palm'?rr*.42:rr*.62;{const m=new T3.Mesh(new T3.CylinderGeometry(pr,pr*.78,ph,22),pot);m.position.y=ph/2;m.castShadow=true;g.add(m)}
+      const leafCol=it.k==='olive'?'#8c9a6e':c.s==='palm'?'#3f7a3a':'#4d8040',lf=M('leaf'+leafCol,()=>std(leafCol,{r:.8})),lf2=M('leaf2'+leafCol,()=>std(shade(leafCol,22),{r:.8})),trunk=M('trunk',()=>std('#6b5136',{r:.9}));
+      const ball=(rad,x,y,z,mt,sy=1)=>{const m=new T3.Mesh(new T3.IcosahedronGeometry(rad,1),mt);m.position.set(x,y,z);m.scale.y=sy;m.castShadow=true;g.add(m)};
+      if(c.s==='plant'){for(let i=0;i<9;i++){const t=r0()*6.28,rad=rr*(.3+r0()*.25),dd=rr*.45*r0();ball(rad,Math.cos(t)*dd,ph+rad*.7+(h-ph-rad)*r0(),Math.sin(t)*dd,i%2?lf:lf2,.9)}}
+      else if(c.s==='fig'){const th=h*.62;{const m=new T3.Mesh(new T3.CylinderGeometry(.025,.035,th-ph,8),trunk);m.position.y=ph+(th-ph)/2;g.add(m)}
+        const cr=rr*(it.k==='olive'?.42:.36);for(let i=0;i<11;i++){const t=r0()*6.28,dd=rr*.5*Math.sqrt(r0());ball(cr*(.6+r0()*.5),Math.cos(t)*dd,th+(h-th)*r0()*.85,Math.sin(t)*dd,i%2?lf:lf2,it.k==='olive'?.8:1.05)}}
+      else{const stems=c.s==='palm'&&h>1.6?3:2;for(let sIdx=0;sIdx<stems;sIdx++){const lean=(r0()-.5)*.35,tilt=r0()*6.28,top=h*(.55+r0()*.2),sx=Math.sin(lean)*Math.cos(tilt)*top*.5,sz=Math.sin(lean)*Math.sin(tilt)*top*.5;
+          const st=new T3.Mesh(new T3.CylinderGeometry(.018,.03,top-ph,8),trunk);st.position.set(sx/2,ph+(top-ph)/2,sz/2);st.rotation.set(Math.sin(tilt)*lean,0,-Math.cos(tilt)*lean);g.add(st);
+          const fronds=7+Math.floor(r0()*3);for(let f=0;f<fronds;f++){const L=rr*(.75+r0()*.35),pv=new T3.Group();pv.position.set(sx,top,sz);pv.rotation.set(0,f/fronds*6.28+r0()*.4,0);
+            const arm=new T3.Group();arm.rotation.z=.25+r0()*.55;pv.add(arm);const m=new T3.Mesh(new T3.SphereGeometry(.5,12,6),f%2?lf:lf2);m.scale.set(L,.025,Math.max(.12,L*.32));m.position.x=L/2;m.castShadow=true;arm.add(m);g.add(pv)}}}
+      break}
     case 'person':{const k=h/1.75,fm=M('figure',()=>std('#d8d4cc',{r:.75}));const cyl=(r1,r2,len,x,y,z,rx=0,rz=0)=>{const m=new T3.Mesh(new T3.CylinderGeometry(r1,r2,len,14),fm);m.position.set(x,y,z);m.rotation.set(rx,0,rz);m.castShadow=true;g.add(m)};
       const sph=(r,x,y,z,sx=1,sy=1,sz=1)=>{const m=new T3.Mesh(new T3.SphereGeometry(r,18,14),fm);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;g.add(m)};
       [-1,1].forEach(sd=>{cyl(.068*k,.048*k,.84*k,sd*.09*k,.42*k,0);B(sd*.09*k-.05*k,-.02*k,sd*.09*k+.05*k,.13*k,0,.06*k,fm)});
@@ -1175,6 +1200,19 @@ function booksTexture(){if(texCache.books3d)return texCache.books3d;const c=docu
     const run=4+Math.floor(r()*9),hBase=190+r()*110,col0=pal[Math.floor(r()*pal.length)];
     for(let k=0;k<run&&p<1024;k++){const bw=16+r()*30,bh=Math.min(330,hBase+(r()-.5)*60),col=r()<.35?col0:pal[Math.floor(r()*pal.length)];book(p,bw,bh,col);p+=bw+(r()<.1?1:0)}}
   const tex=new T3.CanvasTexture(c);tex.wrapS=tex.wrapT=T3.RepeatWrapping;tex.encoding=T3.sRGBEncoding;tex.anisotropy=8;texCache.books3d=tex;return tex}
+const ART_NAMES=['Colour field','Coast','Hills at dusk','Botanical','Geometric','Abstract'];
+function hashId(s){let h=0;for(const ch of String(s))h=(h*31+ch.charCodeAt(0))>>>0;return h}
+function artOf(it){return it.art!=null?+it.art:hashId(it.id)%ART_NAMES.length}
+function artTexture(v){const key='art'+v;if(texCache[key])return texCache[key];const c=document.createElement('canvas');c.width=768;c.height=512;const x=c.getContext('2d'),r=rnd(100+v);
+  if(v===0){x.fillStyle='#d8582a';x.fillRect(0,0,768,512);x.shadowColor='rgba(0,0,0,.25)';x.shadowBlur=30;x.fillStyle='#8f1d2c';x.fillRect(60,45,648,230);x.fillStyle='#f0a13a';x.fillRect(60,300,648,160);x.shadowBlur=0}
+  else if(v===1){let g=x.createLinearGradient(0,0,0,300);g.addColorStop(0,'#7fb6d8');g.addColorStop(1,'#f3e2c0');x.fillStyle=g;x.fillRect(0,0,768,300);x.fillStyle='#f6c95b';x.beginPath();x.arc(560,190,46,0,6.3);x.fill();
+    g=x.createLinearGradient(0,300,0,400);g.addColorStop(0,'#1f6e8c');g.addColorStop(1,'#4aa3b5');x.fillStyle=g;x.fillRect(0,300,768,100);x.fillStyle='#e9d3a3';x.beginPath();x.moveTo(0,512);x.lineTo(0,410);x.quadraticCurveTo(380,370,768,420);x.lineTo(768,512);x.fill();x.fillStyle='rgba(255,255,255,.6)';for(let i=0;i<14;i++)x.fillRect(r()*768,310+r()*80,30+r()*60,2)}
+  else if(v===2){const g=x.createLinearGradient(0,0,0,512);g.addColorStop(0,'#2d2350');g.addColorStop(.55,'#e0705a');g.addColorStop(1,'#f7c56b');x.fillStyle=g;x.fillRect(0,0,768,512);['#a24d6b','#6e3463','#3d2350','#22173a'].forEach((col,k)=>{x.fillStyle=col;x.beginPath();x.moveTo(0,512);let y=250+k*60;x.lineTo(0,y);for(let px=0;px<=768;px+=48)x.lineTo(px,y+Math.sin(px/90+k*2)*28+(r()-.5)*14);x.lineTo(768,512);x.fill()})}
+  else if(v===3){x.fillStyle='#efe6d2';x.fillRect(0,0,768,512);const leaf=(lx,ly,len,ang,col)=>{x.save();x.translate(lx,ly);x.rotate(ang);x.fillStyle=col;x.beginPath();x.ellipse(len/2,0,len/2,len/5,0,0,6.3);x.fill();x.strokeStyle='rgba(255,255,255,.4)';x.beginPath();x.moveTo(0,0);x.lineTo(len,0);x.stroke();x.restore()};
+    for(let i=0;i<16;i++)leaf(384+(r()-.5)*200,470,150+r()*170,-1.57+(r()-.5)*2.2,['#2f6b45','#4f8a4f','#7aa856','#1f4f3a'][i%4]);for(let i=0;i<4;i++){x.fillStyle='#e86f8f';x.beginPath();x.arc(250+r()*270,90+r()*160,22+r()*16,0,6.3);x.fill();x.fillStyle='#f6c95b';x.beginPath();x.arc(250+r()*270,90+r()*160,8,0,6.3);x.fill()}}
+  else if(v===4){x.fillStyle='#f1e9da';x.fillRect(0,0,768,512);x.fillStyle='#e0a53a';x.beginPath();x.arc(250,280,170,0,6.3);x.fill();x.fillStyle='#1f6f73';x.fillRect(420,80,250,250);x.fillStyle='#c6512f';x.beginPath();x.arc(545,330,125,Math.PI,0);x.fill();x.strokeStyle='#1c1c1c';x.lineWidth=10;x.beginPath();x.moveTo(60,450);x.lineTo(700,450);x.moveTo(380,40);x.lineTo(380,470);x.stroke()}
+  else{x.fillStyle='#f4efe6';x.fillRect(0,0,768,512);const cols=['#1e5b8c','#e2533a','#f2b632','#2e8b6a','#7a3f8f','#1c1c1c'];for(let i=0;i<26;i++){x.strokeStyle=cols[i%cols.length];x.globalAlpha=.75;x.lineWidth=10+r()*34;x.lineCap='round';x.beginPath();const sx=r()*768,sy=r()*512;x.moveTo(sx,sy);x.bezierCurveTo(sx+(r()-.5)*400,sy+(r()-.5)*300,sx+(r()-.5)*400,sy+(r()-.5)*300,sx+(r()-.5)*500,sy+(r()-.5)*350);x.stroke()}x.globalAlpha=1}
+  const t=new T3.CanvasTexture(c);t.encoding=T3.sRGBEncoding;t.anisotropy=8;texCache[key]=t;return t}
 function pick3D(e){const r=R3.domElement.getBoundingClientRect();const v=new T3.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);const rc=new T3.Raycaster();rc.setFromCamera(v,cam3);
   const hit=rc.intersectObjects(pick,false)[0];if(hit){sel={type:hit.object.userData.type,id:hit.object.userData.id};span=null}else sel=null;renderInspector();V3.dirty=true}
 function camPreset(p){setWalk(false);const t=ctrl3.target;
