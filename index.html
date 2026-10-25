@@ -565,7 +565,7 @@ function sym(s,w,d){const a=w/2,b=d/2;let o='';
   case 'plant':case 'fig':{const r=Math.min(a,b);o=Ci(0,0,r*.42,'b2');for(let i=0;i<9;i++){const t=i/9*6.283;o+=Ci(Math.cos(t)*r*.62,Math.sin(t)*r*.62,r*.34,'b')}return o+Ci(0,0,r*.3,'b2')}
   case 'palm':{const r=Math.min(a,b);o=Ci(0,0,r*.24,'b2');for(let i=0;i<10;i++){const t=i/10*6.283,x=Math.cos(t)*r*.95,y=Math.sin(t)*r*.95;o+=Ln(0,0,x,y)+El(x*.62,y*.62,r*.2,r*.07,'b').replace('/>',` transform="rotate(${n(t*57.3)} ${n(x*.62)} ${n(y*.62)})"/>`)}return o}
   case 'picture':return R(-a,-b,w,d,'b2')+R(-a,b-Math.min(14,d*.4),w,Math.min(14,d*.4),'f');
-  case 'buddha':return R(-a,-b,w,d,'b2',20)+El(0,b*.18,a*.78,b*.58,'b')+El(0,-b*.05,a*.42,b*.36,'b')+Ci(0,-b*.12,Math.min(a,b)*.24,'b2');
+  case 'buddha':{const lip=50,fw=Math.max(200,w-2*lip),fd=Math.min(d-2*lip,fw*.8),pa=fw/2+lip,pb=fd/2+lip;return R(-pa,-pb,2*pa,2*pb,'b2',15)+El(0,fd*.04,fw/2,fd/2,'b')+El(0,-fd*.08,fw*.29,fd*.3,'b')+Ci(0,-fd*.06,Math.min(fw,fd)*.2,'b2')}
   case 'person':return El(0,0,a,b*.9,'b')+Ci(0,0,Math.min(a,b)*.6,'b2')+Ln(0,b*.35,0,b*1.05);
   case 'c-rect':return R(-a,-b,w,d,'b',10)+R(-a+Math.min(60,w*.08),-b+Math.min(60,d*.08),w-2*Math.min(60,w*.08),d-2*Math.min(60,d*.08),'tl',6);
   case 'c-round':return R(-a,-b,w,d,'b',Math.min(w,d)*.25);
@@ -1170,10 +1170,11 @@ function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new
       cyl(.17*k,.135*k,.56*k,0,1.1*k,0);sph(.17*k,0,1.36*k,0,1.05,.5,.62);cyl(.05*k,.055*k,.12*k,0,1.47*k,0);sph(.112*k,0,1.615*k,.005*k,.9,1.12,1);
       [-1,1].forEach(sd=>cyl(.045*k,.038*k,.64*k,sd*.215*k,1.07*k,0,0,sd*.06));break}
     case 'buddha':{const st=M('plinth',()=>std('#c8c2b4',{r:.9})),br=M('bronze',()=>new T3.MeshStandardMaterial({color:'#86683c',roughness:.42,metalness:.55}));
-      const ph=Math.min(.7,h*.36),fh=h-ph;B(-a,-b,a,b,0,ph-.04,st);B(-a-.02,-b-.02,a+.02,b+.02,ph-.04,ph,st);const bw=Math.min(w*.92,d*1.35);
+      const ph=Math.min(.7,h*.36),fh=h-ph,lip=.05,bw=Math.max(.2,w-2*lip),dz0=Math.min(d-2*lip,bw*.8),pa=bw/2+lip,pb=dz0/2+lip; // plinth hugs the figure, about 50 mm proud all round
+      B(-pa,-pb,pa,pb,0,ph-.04,st);B(-pa-.015,-pb-.015,pa+.015,pb+.015,ph-.04,ph,st);
       const blob=(sx,sy,sz,y,z)=>{const m=new T3.Mesh(new T3.SphereGeometry(.5,28,20),br);m.scale.set(sx,sy,sz);m.position.set(0,y,z);m.castShadow=true;g.add(m)};
       const E=(sx,sy,sz,x,y,z,rz=0)=>{const m=new T3.Mesh(new T3.SphereGeometry(.5,28,20),br);m.scale.set(sx,sy,sz);m.position.set(x,y,z);m.rotation.z=rz;m.castShadow=true;g.add(m)};
-      const y0=ph,dz=Math.min(d*.9,bw*.75);
+      const y0=ph,dz=dz0;
       E(bw,fh*.17,dz,0,y0+fh*.085,dz*.04);                                   // crossed legs, lotus seat
       {const m=new T3.Mesh(new T3.CylinderGeometry(bw*.23,bw*.19,fh*.42,24),br);m.scale.z=.72;m.position.set(0,y0+fh*.38,-dz*.06);m.castShadow=true;g.add(m)} // torso
       E(bw*.58,fh*.13,dz*.42,0,y0+fh*.58,-dz*.06);                           // shoulders
