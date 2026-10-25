@@ -532,7 +532,8 @@ function sym(s,w,d){const a=w/2,b=d/2;let o='';
   case 'stool':return Ci(0,0,Math.min(a,b)*.92,'b')+Ci(0,0,Math.min(a,b)*.55);
   case 'table':return R(-a,-b,w,d,'b',Math.min(w,d)>700?30:Math.min(w,d)*.5);
   case 'desk':return R(-a,-b,w,d,'b',10)+R(-w*.22,-b+50,w*.44,55,'f')+R(-w*.12,b-d*.35,w*.24,d*.2,'l',20);
-  case 'lounger':return R(-a,-b,w,d,'b',Math.min(d*.3,200))+R(-a+40,-b+40,w*.24,d-80,'b2',Math.min(d*.25,160));
+  case 'lounger':{const bk=Math.min(700,w*.33);o=R(-a,-b,w,d,'l',30)+R(-a+30,-b+45,w-60,d-90,'b',40)+R(-a+30,-b+45,bk,d-90,'b2',40)+El(-a+110,0,70,(d-140)/2,'b');
+    for(let x=-a+bk+120;x<a-60;x+=160)o+=Ln(x,-b+45,x,b-45,'tl');return o}
   case 'daybed':return R(-a,-b,w,d,'b',90)+R(-a,-b,w,d*.2,'b2',80);
   case 'tv':return R(-a,-b,w,d,'b2')+R(-a+w*.05,b-Math.min(60,d*.3),w*.9,Math.min(60,d*.3),'f');
   case 'rug':return R(-a,-b,w,d,'rug')+R(-a+120,-b+120,w-240,d-240,'rug');
@@ -1125,7 +1126,20 @@ function item3D(it){const c=CATMAP[it.k]||{s:'c-rect',t:'--z-other'};const g=new
     case 'chair':B(-a+w*.08,-b+d*.2,a-w*.08,b,0,.46);B(-a,-b,a,-b+d*.18,0,h,tint2);break;
     case 'stool':{const m=new T3.Mesh(new T3.CylinderGeometry(Math.min(a,b)*.9,Math.min(a,b)*.6,h,20),tint);m.position.y=h/2;m.castShadow=true;g.add(m);break}
     case 'table':case 'desk':B(-a,-b,a,b,h-.04,h,c.s==='desk'?tint2:tint);legs(h);if(c.s==='desk')B(-w*.2,-b+.05,w*.2,-b+.08,h,h+.42,mats.dark);break;
-    case 'lounger':case 'daybed':B(-a,-b,a,b,0,.32);B(-a,-b,-a+w*.24,b,.32,.62,tint2);break;
+    case 'lounger':{const tk=M('teak',()=>std('#9a6a42',{r:.6})),cu=M('cushion',()=>std('#ebe5d9',{r:.95})),pip=M('piping',()=>std('#cfc6b6',{r:.9}));
+      const seat=.31,rail=.045,leg=.05,bk=Math.min(.72,w*.36),px0=-a+bk;           // backrest hinge point
+      [-1,1].forEach(sd=>{const z0=sd*(b-rail/2);B(-a,z0-rail/2,a,z0+rail/2,seat-.07,seat,tk);                       // side rails
+        [-a+.06,a-.06-leg].forEach(x=>B(x,z0-leg/2,x+leg,z0+leg/2,0,seat-.07,tk))});                                  // legs
+      B(-a,-b,-a+rail,b,seat-.07,seat,tk);B(a-rail,-b,a,b,seat-.07,seat,tk);                                        // end rails
+      for(let x=px0+.02;x<a-.05;x+=.075)B(x,-b+rail,x+.05,b-rail,seat-.035,seat-.01,tk);                            // seat slats
+      B(px0,-b+.03,a-.02,b-.03,seat,seat+.065,cu);B(px0,-b+.03,a-.02,-b+.04,seat+.025,seat+.04,pip);B(px0,b-.04,a-.02,b-.03,seat+.025,seat+.04,pip);
+      const back=new T3.Group();back.position.set(px0,seat,0);back.rotation.z=-.62;g.add(back);                       // angled backrest
+      [-1,1].forEach(sd=>boxA(-bk,sd*(b-rail/2)-rail/2,0,sd*(b-rail/2)+rail/2,-.035,0,tk,back));
+      for(let x=-bk+.03;x<-.03;x+=.075)boxA(x,-b+rail,x+.05,b-rail,-.03,-.01,tk,back);
+      boxA(-bk+.02,-b+.03,0,b-.03,0,.065,cu,back);
+      {const pl=new T3.Mesh(new T3.CylinderGeometry(.075,.075,d-.12,20),cu);pl.rotation.x=Math.PI/2;pl.position.set(-bk+.14,.13,0);pl.castShadow=true;back.add(pl)}  // rolled pillow
+      break}
+    case 'daybed':B(-a,-b,a,b,0,.32);B(-a,-b,-a+w*.24,b,.32,.62,tint2);break;
     case 'tv':B(-a,-b,a,b,0,.5,tint2);B(-a*.9,-b,a*.9,-b+.06,.75,Math.max(.8,h),mats.dark);break;
     case 'rug':case 'putt':case 'mat':case 'yoga':case 'c-flat':B(-a,-b,a,b,0,Math.max(.01,h),c.s==='putt'||c.s==='mat'?mats.turf:tint);break;
     case 'counter':B(-a,-b,a,b,0,.86,tint2);B(-a,-b,a,b,.86,.9,mats.white);B(-a,-b,a,-b+.35,1.45,2.15,tint2);break;
