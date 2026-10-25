@@ -86,6 +86,8 @@ select.units{border:1px solid var(--rule);background:var(--btn);border-radius:8p
 .scale i{display:block;height:6px;border:1.5px solid var(--ink);border-top:0}
 .zoombox{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:4px}
 .zoombox .ib{padding:6px}
+.zoombox .sep{height:1px;background:var(--rule);margin:2px 0}
+.zoombox .ib[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
 .toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:7px 12px;border-radius:8px;font-size:12px;display:flex;gap:10px;align-items:center}
 .toast button{background:transparent;border:0;color:inherit;text-decoration:underline;cursor:pointer;padding:0}
 
@@ -279,6 +281,13 @@ kbd{font-family:var(--f-num);font-size:10.5px;border:1px solid var(--rule);borde
         <button class="ib" id="zin" title="Zoom in (+)"><svg class="ic" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg></button>
         <button class="ib" id="zout" title="Zoom out (−)"><svg class="ic" viewBox="0 0 16 16"><path d="M3 8h10"/></svg></button>
         <button class="ib" id="zfit" title="Fit plan (F)"><svg class="ic" viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+<div class="sep" role="separator"></div>
+<div id="toolCol" role="group" aria-label="Tools" style="display:flex;flex-direction:column;gap:4px">
+<button class="ib" data-tool2="select" aria-pressed="true" title="Select and move (V)" aria-label="Select"><svg class="ic" viewBox="0 0 16 16"><path d="M3 2l9 5-4 1.2L6.5 13z"/></svg></button>
+<button class="ib" data-tool2="wall" aria-pressed="false" title="Draw walls (W)" aria-label="Wall"><svg class="ic" viewBox="0 0 16 16"><path d="M2 12h12M2 9h12M2 12V9M14 12V9"/></svg></button>
+<button class="ib" data-tool2="measure" aria-pressed="false" title="Tape measure (M)" aria-label="Measure"><svg class="ic" viewBox="0 0 16 16"><path d="M2 8h12M2 5v6M14 5v6M5 8v-1.5M8 8V6M11 8v-1.5"/></svg></button>
+<button class="ib" data-tool2="span" aria-pressed="false" title="Free space at a point (S)" aria-label="Free space"><svg class="ic" viewBox="0 0 16 16"><path d="M8 1.5v13M1.5 8h13M8 1.5l-1.6 1.8M8 1.5l1.6 1.8M8 14.5l-1.6-1.8M8 14.5l1.6-1.8M1.5 8l1.8-1.6M1.5 8l1.8 1.6M14.5 8l-1.8-1.6M14.5 8l-1.8 1.6"/></svg></button>
+</div>
       </div>
       <div class="hud">
         <div class="scale" id="scale"><span id="scaleT">1 m</span><i id="scaleB" style="width:60px"></i></div>
@@ -747,7 +756,7 @@ const HINTS={select:'<b>Select:</b> drag items from the left or click to add. Dr
   measure:'<b>Measure:</b> click two points, or drag. Ends snap to walls and corners. Hold Shift to keep it straight.',
   span:'<b>Free space:</b> click anywhere on the floor to see the clear width and depth through that point.'};
 function setTool(t,kind){tool=t;wallKind=t==='wall'&&kind==='glass'?'glass':'solid';wallStart=null;typed='';measureStart=null;snapHit=null;if(t!=='span')span=null;stage.dataset.tool=t;
-  document.querySelectorAll('#toolSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===t));$('#hint').innerHTML=wallKind==='glass'?HINTS.wall.replace('<b>Wall:</b>','<b>Glass wall:</b>'):HINTS[t];render();renderInspector()}
+  document.querySelectorAll('#toolSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===t));document.querySelectorAll('[data-tool2]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool2===t));$('#hint').innerHTML=wallKind==='glass'?HINTS.wall.replace('<b>Wall:</b>','<b>Glass wall:</b>'):HINTS[t];render();renderInspector()}
 function wallEnd(){if(!wallStart||!cursor)return cursor;if(typed){const L=parseLen(typed);if(L){let dx=cursor[0]-wallStart[0],dy=cursor[1]-wallStart[1];if(!altDown){if(Math.abs(dx)>Math.abs(dy))dy=0;else dx=0}const m=Math.hypot(dx,dy)||1;return [wallStart[0]+dx/m*L,wallStart[1]+dy/m*L]}}return cursor}
 let altDown=false,shiftDown=false;
 function computeSpan(x,y){const s=obstacleSegs(null);span={x,y,l:ray(x,y,-1,0,s),r:ray(x,y,1,0,s),u:ray(x,y,0,-1,s),d:ray(x,y,0,1,s)};if(!inSpace(x,y)){span=null;toast('Click inside the building or loggia to measure free space.')}}
@@ -851,6 +860,7 @@ $('#q').addEventListener('input',renderPalette);
 
 /* ---------- Chrome ---------- */
 document.querySelectorAll('#toolSeg button').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+document.querySelectorAll('[data-tool2]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool2)));
 $('#undo').onclick=undo;$('#redo').onclick=redo;$('#zin').onclick=()=>zoomAt(1.3,W/2,H/2);$('#zout').onclick=()=>zoomAt(1/1.3,W/2,H/2);$('#zfit').onclick=fit;
 $('#units').value=opt.units;$('#units').onchange=e=>{opt.units=e.target.value;save();renderPalette();render();renderInspector()};
 function closeSheets(){$('#pal').classList.remove('open');$('#insp').classList.remove('open')}
